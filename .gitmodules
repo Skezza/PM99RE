@@ -4,3 +4,6 @@
 [submodule "upstream/pm99-skezmod-patcher"]
 	path = upstream/pm99-skezmod-patcher
 	url = git@github.com:Skezza/pm99-skezmod-patcher
+[submodule "upstream/pm99-runner"]
+	path = upstream/pm99-runner
+	url = git@github.com:Skezza/pm99-runner.git
