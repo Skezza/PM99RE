@@ -11,6 +11,43 @@ This is the canonical operator-facing workflow for using the current PM99 editor
   only use `--skip-validate` for investigative workflows.
 - Never commit `.FDI`, `.backup*`, generated CSVs, or ad hoc exports.
 
+## PM99 Runner Host Coordination
+
+When using `pm99-runner` against the shared remote host, assume the host is now
+coordinated by a shared per-lock queue in the runner scripts.
+
+- If a run is queued for the remote host lock, that is expected and healthy.
+- Contending launches now stay alive in a FIFO queue and emit periodic queue position/ETA
+  updates, including a parseable `PM99_RUNNER_QUEUE_STATUS {json}` line for agents.
+- The default lock concurrency is `1` active holder per `PM99_RUNNER_HOST_LOCK_NAME`.
+  Only raise `PM99_RUNNER_HOST_LOCK_CONCURRENCY` for lock domains that are genuinely safe to run in
+  parallel; the shared PM99 Docker host should be treated as single-tenant by default.
+  The queue still preserves FIFO order and reports `active_holders` plus `concurrency` in its status output.
+- Restart long-lived workers or saved shells before fresh runner work so they pick up the
+  updated lock-aware scripts.
+- Older workers started from pre-fix checkouts can still collide until they are stopped and
+  relaunched.
+- Do not force-break the host lock unless the recorded holder is confirmed dead.
+
+Background and implementation detail live in:
+
+- [2026-04-11_pm99_runner_shared_host_collision_note.md](/home/joe/pm99-research/docs/HISTORY/agent_work/2026-04-11_pm99_runner_shared_host_collision_note.md)
+
+## Protected PM99 Runner Launch Workflow
+
+Use `./scripts/run_pm99_experiment.sh` for routine PM99 experiments. It is the supported front door for the protected runner checkout.
+
+- Launch from the research repo or another control shell, not from inside `upstream/pm99-runner`.
+- Always pass `--worker <name>`; the launcher hard-blocks if the runner checkout is dirty or the cwd is inside the runner tree unless you deliberately add `--allow-dirty-runner` or `--allow-runner-cwd`.
+- Default local artifacts land under `.local/runlogs/pm99_runner/<run-tag>`. Use `--artifact-root` only when you need to redirect output elsewhere.
+- Use `--dry-run` to write `control_launch.json` and inspect the exact wrapper command before starting a real run.
+- For paired comparisons, use `staff-determinism`; the launcher adapts that wrapper through the runner's `--run-tag-prefix` interface.
+
+Examples:
+
+- `./scripts/run_pm99_experiment.sh smoke --worker lane-a --dry-run`
+- `./scripts/run_pm99_experiment.sh season-experiment --worker lane-a -- --ai-manager --chatgpt-oauth-store /path/to/oauth.json --openai-model gpt-5.4-mini`
+
 ## Standard Single-Record Workflow
 
 1. Copy the target `DBDAT/` directory to a disposable working folder.
