@@ -62,12 +62,23 @@ A local patched copy was created at:
 
 The game launched locally from that copy using the default Wine prefix. The dedicated test Wine prefix was not suitable because it lacked `MFC42.DLL`.
 
-## Remaining Gap
-The player search-by-name window still does not reliably show `Stars` for Valderrama. This is a separate UI surface from the player record and the signing notice.
+## Search Hover/Status Strip Closure
+The remaining search-by-name gap was the hover/status strip above `Cancel`, not the visible result-row columns. A rejected experiment rendered club text by replacing a result-row cell; that was reverted because it changed the row layout and fonts.
 
-Current assessment:
+Correct target:
 
-- It is a visible correctness gap.
-- It is not blocking the crash fix, player record fix, or signing-message fix.
-- It should not be conflated with the formatter fix because it likely uses a different list-rendering path.
-- If pursued, validate it with a dedicated runner lane and CV/OCR proof rather than assuming the existing `FUN_004B5C20` fallback covers it.
+- `FUN_00474B20` stores the hovered row player pointer at container `+0x2734` and invalidates the status widget at `container+0x26e0`.
+- status widget vtable `0x006EA428`, draw entry `0x006EA534 -> 0x00405F30`.
+- `FUN_00405F30` draws the bottom hover/status strip. For normal players it calls `FUN_004B5C20` and draws `[team_record+0x04]`. For Valderrama it hits a special `0x26AC` branch at `0x00406116` and uses `[player+0x10]`, which is blank, bypassing the central fallback.
+
+Patch added in `pm99-skezmod-patcher`:
+
+- site: `0x00406116` in `FUN_00405F30`
+- cave: `0x006E5145` inside the existing fallback bundle gap
+- behavior: preserve non-empty special-club text; for blank/null `0x26AC` text, use existing `Stars` string at `0x006E519A`; normal players continue through the original lookup path.
+
+Runner validation:
+
+- broken clean control: `artifacts/valderrama_offer_probe/valderrama_hover_rightmsg_20260422T200650Z/screens/46_hover_result_row.png` shows `Carlos VALDERRAMA` with blank club cell.
+- fixed Valderrama proof: `artifacts/valderrama_offer_probe/valderrama_hover_fix_20260422T201330Z/screens/46_hover_result_row.png` shows `Carlos VALDERRAMA` and `Stars`.
+- Beckham regression control: `artifacts/valderrama_offer_probe/beckham_hover_fix_control_20260422T201616Z/screens/43_hover_result_row.png` still shows `David Robert BECKHAM` and `Manchester Utd.`.
