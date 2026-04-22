@@ -14,14 +14,16 @@ The first suspected producer was `FUN_004b2fc0` around `0x004B31A8`, which const
 
 That proved `0x004B31A8` was not sufficient for the observed UI output.
 
-The effective fix is formatter-local in `FUN_00499d00`, at the `{S3}` token branch:
+The initial effective fix was formatter-local in `FUN_00499d00`, at the `{S3}` token branch, but the first implementation was too narrow because it guarded only on Valderrama's indexed player record id `20864` (`0x5180`).
 
-- patch site: `0x00499DA1`
-- condition: event `{S3}` pointer is null
-- guard: event player id at `[event + 0x08]` equals Valderrama's indexed player record id `20864` (`0x5180`)
-- replacement: use the existing cave string pointer for `Stars` at `0x006E519A`
+The scalable fix now keeps the same patch site, `0x00499DA1`, but changes the fallback rule:
 
-This keeps the fallback narrow: it does not globally rewrite all `{S3}` tokens or all signing messages.
+- if the supplied `{S3}` pointer is non-null, preserve original formatting behavior
+- if `{S3}` is null, resolve `[ebp+0x0c]` through the central team lookup `FUN_004B5C20`
+- use `[team_record+0x04]` from that lookup as the formatter argument
+- therefore `team_id 4705 -> Stars` and `team_id 4706 -> Free players` are covered by the shared fallback table, without player-id hardcoding
+
+This keeps the fallback narrow: it does not globally rewrite all `{S3}` tokens, but it does scale to all events whose null club suffix still carries a fallback-covered team id.
 
 ## Runner Validation
 Validation run:
@@ -82,3 +84,19 @@ Runner validation:
 - broken clean control: `artifacts/valderrama_offer_probe/valderrama_hover_rightmsg_20260422T200650Z/screens/46_hover_result_row.png` shows `Carlos VALDERRAMA` with blank club cell.
 - fixed Valderrama proof: `artifacts/valderrama_offer_probe/valderrama_hover_fix_20260422T201330Z/screens/46_hover_result_row.png` shows `Carlos VALDERRAMA` and `Stars`.
 - Beckham regression control: `artifacts/valderrama_offer_probe/beckham_hover_fix_control_20260422T201616Z/screens/43_hover_result_row.png` still shows `David Robert BECKHAM` and `Manchester Utd.`.
+
+
+## Lalas / All-Stars Scale Follow-up - 2026-04-22
+
+Alexi Lalas proved that two more surfaces were still independent of the central lookup:
+
+- Search hover/status strip: `FUN_00405F30` at `0x00406116` branches on special marker `0x26AC` and uses `[player+0x10]` directly. Patch cave `0x006E5145` preserves non-empty text and backfills blank/null text with `Stars`.
+- Player-record renderer: the profile path around `0x0043F1EF` has the same `0x26AC` special branch and uses `[player+0x10]` at `0x0043F20F`. Patch cave `0x006E51E1` preserves non-empty text and backfills blank/null text with `Stars`.
+
+Validation evidence:
+
+- Search hover Valderrama proof: `artifacts/valderrama_offer_probe/valderrama_hover_fix_20260422T201330Z/screens/46_hover_result_row.png` shows `Carlos VALDERRAMA` / `Stars`.
+- Search hover Beckham control: `artifacts/valderrama_offer_probe/beckham_hover_fix_control_20260422T201616Z/screens/43_hover_result_row.png` preserves `David Robert BECKHAM` / `Manchester Utd.`.
+- Lalas player-record proof: `artifacts/valderrama_offer_probe/lalas_profile_special_patch_20260422T231639Z/screens/48_inspect_lalas_profile.png` shows Alexi Lalas with `Stars` in the player record.
+
+A long Lalas signing ticker run (`lalas_profile_patch_ticker_20260422T232036Z`) advanced through many dashboard cycles but did not produce an OCR match for `lalas` and `stars` before timeout. Treat that as inconclusive route/signing evidence, not as a formatter-patch failure.
