@@ -62,24 +62,12 @@ A local patched copy was created at:
 
 The game launched locally from that copy using the default Wine prefix. The dedicated test Wine prefix was not suitable because it lacked `MFC42.DLL`.
 
-## Search-by-name Row Follow-up
-The remaining search-row surface was closed separately after tracing the row subclass painter.
+## Remaining Gap
+The player search-by-name window still does not reliably show `Stars` for Valderrama. This is a separate UI surface from the player record and the signing notice.
 
-Key finding:
+Current assessment:
 
-- `FUN_00474870` already includes team names in the search key, but it only stores player pointers into result rows.
-- The concrete row painter is `FUN_0044F590`, reached from the search-row vtable. It reads `row + 0x54` as the player pointer and paints name, stars, numeric attributes, value/wage, and two small numeric cells.
-- The original row painter never calls `FUN_004B5C20` or reads player `+0x18`, so the club name was not rendered even when the lookup fallback was correct.
-
-Patch added in `pm99-skezmod-patcher`:
-
-- patch site: `0x0044FA54` inside `FUN_0044F590`
-- behavior: replace the wage/trailing numeric cells with one club-name cell
-- lookup: read player team id from `[player + 0x18]`, call `FUN_004B5C20`, then draw `[team + 0x04]`
-- fallback coverage: hidden Valderrama team id `4705` resolves to `Stars` through the existing fallback record
-
-Runner validation:
-
-- `valderrama_search_teamcell_v2_20260422T065304Z`: search row shows `Stars`
-- `beckham_search_teamcell_v2_20260422T065601Z`: search row shows `Manchester Utd.`
-- proof HTML: `artifacts/valderrama_offer_probe/search_teamcell_v2_proof.html`
+- It is a visible correctness gap.
+- It is not blocking the crash fix, player record fix, or signing-message fix.
+- It should not be conflated with the formatter fix because it likely uses a different list-rendering path.
+- If pursued, validate it with a dedicated runner lane and CV/OCR proof rather than assuming the existing `FUN_004B5C20` fallback covers it.
