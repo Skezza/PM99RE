@@ -1,5 +1,7 @@
 # Current Editor Roadmap
 
+> Snapshot note: canonical product roadmap lives in `upstream/pm99-skezmod-db-editor/docs/CURRENT_ROADMAP.md`.
+
 This is the active roadmap for the PM99 editor.
 
 The historical plans under `docs/HISTORY/enhancement_plans/` are retained for
@@ -53,6 +55,12 @@ through `app.gui` and implemented in `app/gui_refresh.py`.
 - Bitmap/asset discovery now uses a shared read-only contract in both GUI
   (`Inspect Bitmap References`) and CLI (`bitmap-reference-probe`) so the
   discovery payload is scriptable and consistent.
+- The asset lane has now moved beyond string references in local research: player
+  mini-photos have been traced to `FDI-PKF/DBDAT/MINIFOTO.PKF`, with a working
+  read-only extraction/render path and a reproducible full-gallery build through
+  PM99RE (`scripts/build_player_bitmap_review.sh`). The correct current colour
+  path uses an embedded RIFF palette from `DAT.PKF`, not the loose
+  `SIMULPCF6.PAL` fallback.
 - Player-name capacity preflight is now also a shared read-only contract in GUI
   Advanced and CLI (`player-name-capacity`) so future API/batch imports can
   validate name-length constraints before writes.
@@ -149,9 +157,15 @@ through `app.gui` and implemented in `app/gui_refresh.py`.
    - The first shared contract is now in place (`inspect_bitmap_references`),
      exposed in GUI Advanced (`Inspect Bitmap References`) and CLI
      (`bitmap-reference-probe`) with aligned payloads.
-   - Use the Advanced Workspace bitmap-reference probe as the first discovery
-     surface, then promote richer asset tooling only after the backing contract
-     is stable.
+   - That initial reference probe has now led to a stronger player-photo result:
+     `MINIFOTO.PKF` is the current confirmed player portrait archive, and the
+     current mirrored corpus yields `1354` `J96#####.BMP` player-photo records.
+   - The current best read-only render path depends on an embedded `DAT.PKF`
+     RIFF palette, so palette selection is now part of the discovery contract.
+   - Use the PM99RE wrapper `scripts/build_player_bitmap_review.sh` as the
+     reproducible research entry point for full-corpus local review, then
+     promote richer asset tooling only after the ownership / write model is
+     stable.
    - Build a future asset browser/editor surface only after the file references,
      ownership model, and write safety are understood.
 
@@ -192,6 +206,9 @@ through `app.gui` and implemented in `app/gui_refresh.py`.
 - Add a read-only asset discovery path for bitmap-backed content once the
   reference contract is stable, then promote it into the editor shell only when
   the ownership / write story is clear.
+- Keep the current player-photo findings explicit in research: `MINIFOTO.PKF`
+  is now the proven player bitmap archive, but it is still a read-only asset
+  lane until archive ownership and write safety are decoded.
 - Keep confirmed parser-backed inspection/reporting contracts visible in the GUI as well as the CLI, while leaving unstable heuristic investigation flows in tools-first surfaces until their contracts settle.
 - Prefer persistent in-app workspaces (for example, the `Analysis` tab) over transient dialogs when a confirmed inspection surface becomes part of the normal editor workflow.
 - Treat “save succeeded” and “database is healthy” as separate checks:

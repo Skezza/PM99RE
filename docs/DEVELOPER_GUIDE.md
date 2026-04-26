@@ -1,5 +1,7 @@
 ﻿# Developer Guide — Tests, Scripts, CLI
 
+> Snapshot note: canonical product developer guidance lives in `upstream/pm99-skezmod-db-editor/docs/DEVELOPER_GUIDE.md`.
+
 Purpose
 Concise engineering playbook for extending, testing, and safely shipping changes to the PM99 database editor and its documentation.
 
@@ -107,6 +109,9 @@ Follow this checklist:
 
 Heuristics guardrails
 - Default editor paths should prefer strict/parser-backed record sources; keep heuristic discovery as fallback or investigation-only.
+- Do not promote heuristic/reconciled findings (for example Wikipedia-assisted slot interpretation) as parser contract truth.
+- If byte semantics are not proven end-to-end (anchor, offsets, decode, write/reopen invariants), mark the lane `FAIL` and document the blocker explicitly.
+- Upstream-facing handovers must only contain 100% contract-backed fields; candidate/iffy fields must be isolated as unresolved research output.
 - Do not write if you cannot find the name-end anchor (keep original bytes)
 - Attributes only within the tail window `len-19 .. len-7`
 - Only write values in valid ranges (e.g., position 0..3). Prefer not to coerce silently.

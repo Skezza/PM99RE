@@ -28,6 +28,9 @@ Product development wrappers:
 - `probe_start_season_staff.py` audits deterministic team->staff slot linkage and emits Stoke + Premier League staff mapping evidence bundles (including plaintext payload-name recovery for compact slots)
 - `validate_staff_name_encoding.py` validates package-encoded staff identity claims (for example `Trevor Francis`) against decoded coach payloads and in-game OCR artifacts
 - `run_pm99_experiment.sh` is the primary launch wrapper for routine PM99 experiments; it hard-blocks a dirty or in-repo runner checkout by default, writes control manifests under `.local/runlogs/pm99_runner`, and dispatches by experiment name from outside the protected runner tree
+- `build_pm99_ddraw_trace_overlay.sh` builds the PM99 log-only DirectDraw proxy with the existing remote runner image and writes a source-relative overlay under `.local/runner-overlays/ddraw-trace`
+- `run_pm99_ddraw_trace_probe.sh` runs the static PM99/Stoke flow on the remote runner with the DirectDraw trace overlay, `WINEDLLOVERRIDES=ddraw=n,b`, and `PM99_DDRAW_TRACE_LOG` routed into artifacts. Its `--normalize-display-mode` option is an explicit experiment that makes the shim report `640x480x16` from `GetDisplayMode`.
+- `summarize_pm99_ddraw_trace.py` summarizes `pm99-ddraw.log` plus runner artifacts into a compact JSON failure-stage report
 
 Research/probe scripts:
 - `probe_*`, `profile_*`, `reconcile_*`, and targeted patch/probe helpers remain here

@@ -1,0 +1,388 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>PM99 No-CD: Three Bytes, One Gate</title>
+  <style>
+    :root {
+      --bg: #f7f3ec;
+      --paper: #fffdf9;
+      --ink: #1f2630;
+      --muted: #626d7c;
+      --line: #dfd7c9;
+      --accent: #b44a2f;
+      --accent-soft: #fff1ec;
+      --steel: #2c4f78;
+      --steel-soft: #ecf3fb;
+      --ok: #2a7b4a;
+      --ok-soft: #edf8f1;
+      --code: #f4f1e9;
+      --mono: "IBM Plex Mono", Consolas, "Courier New", monospace;
+      --sans: "Avenir Next", "Segoe UI", Tahoma, sans-serif;
+      --serif: "Baskerville", "Palatino Linotype", "Book Antiqua", Palatino, serif;
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      color: var(--ink);
+      background:
+        radial-gradient(900px 380px at 6% -8%, #efe5d5 0%, transparent 62%),
+        radial-gradient(850px 340px at 96% -12%, #e4edf8 0%, transparent 60%),
+        var(--bg);
+      font-family: var(--serif);
+      line-height: 1.64;
+    }
+
+    .wrap {
+      max-width: 980px;
+      margin: 30px auto;
+      padding: 0 16px;
+    }
+
+    article {
+      background: var(--paper);
+      border: 1px solid var(--line);
+      border-radius: 14px;
+      padding: 30px 26px;
+      box-shadow: 0 10px 32px rgba(35, 33, 27, 0.07);
+    }
+
+    h1 {
+      margin: 0 0 8px;
+      line-height: 1.14;
+      font-size: 2.25rem;
+      letter-spacing: 0.01em;
+    }
+
+    .dek {
+      margin: 0 0 18px;
+      color: var(--muted);
+      font-size: 1.1rem;
+      max-width: 54ch;
+    }
+
+    .meta {
+      margin: 0 0 24px;
+      color: var(--muted);
+      font-family: var(--sans);
+      font-size: 0.9rem;
+    }
+
+    .chip {
+      display: inline-block;
+      margin: 0 7px 7px 0;
+      padding: 4px 9px;
+      border: 1px solid var(--line);
+      border-radius: 999px;
+      background: #fff;
+    }
+
+    h2 {
+      margin: 30px 0 9px;
+      font-size: 1.45rem;
+      line-height: 1.25;
+      color: #1b2738;
+    }
+
+    p {
+      margin: 0 0 12px;
+      font-size: 1.08rem;
+    }
+
+    .lead {
+      border-left: 4px solid var(--accent);
+      background: var(--accent-soft);
+      border-radius: 8px;
+      padding: 12px 14px;
+      margin: 14px 0 16px;
+      font-size: 1.04rem;
+    }
+
+    .mono {
+      font-family: var(--mono);
+      font-size: 0.92em;
+      background: var(--code);
+      border: 1px solid #ebe5d8;
+      border-radius: 4px;
+      padding: 0 4px;
+      white-space: nowrap;
+    }
+
+    .snapshot {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 12px;
+      margin: 12px 0 16px;
+    }
+
+    .tile {
+      border: 1px solid var(--line);
+      border-radius: 10px;
+      background: #fff;
+      padding: 11px 12px;
+    }
+
+    .tile h3 {
+      margin: 0 0 5px;
+      font-family: var(--sans);
+      font-size: 0.86rem;
+      text-transform: uppercase;
+      letter-spacing: 0.02em;
+      color: #3a4a61;
+    }
+
+    .tile p {
+      margin: 0;
+      font-size: 0.97rem;
+      line-height: 1.5;
+    }
+
+    .diagram {
+      margin: 14px 0 16px;
+      border: 1px solid var(--line);
+      border-radius: 11px;
+      background: #fff;
+      padding: 10px;
+      overflow-x: auto;
+    }
+
+    svg text {
+      font-family: var(--sans);
+      fill: #24374e;
+      font-size: 13px;
+    }
+
+    pre {
+      margin: 10px 0 14px;
+      padding: 12px 13px;
+      border: 1px solid var(--line);
+      border-radius: 9px;
+      background: var(--code);
+      overflow-x: auto;
+      font-family: var(--mono);
+      font-size: 0.84rem;
+      line-height: 1.46;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin: 10px 0 10px;
+      background: #fff;
+      font-family: var(--mono);
+      font-size: 0.9rem;
+    }
+
+    th, td {
+      border: 1px solid var(--line);
+      padding: 9px 10px;
+      text-align: left;
+      vertical-align: top;
+    }
+
+    th {
+      background: var(--steel-soft);
+      color: #21446b;
+      font-family: var(--sans);
+      font-size: 0.8rem;
+      text-transform: uppercase;
+      letter-spacing: 0.02em;
+    }
+
+    ul {
+      margin: 8px 0 14px 22px;
+      padding: 0;
+    }
+
+    li { margin: 0 0 8px; }
+
+    .test {
+      margin: 15px 0;
+      border: 1px solid #87b796;
+      border-radius: 9px;
+      background: var(--ok-soft);
+      padding: 11px 12px;
+    }
+
+    .test strong { font-family: var(--sans); }
+
+    .footer {
+      margin-top: 24px;
+      padding-top: 13px;
+      border-top: 1px solid var(--line);
+      color: var(--muted);
+      font-size: 0.92rem;
+    }
+
+    @media (max-width: 840px) {
+      .snapshot { grid-template-columns: 1fr; }
+      article { padding: 22px 16px; }
+      h1 { font-size: 1.9rem; }
+      h2 { font-size: 1.28rem; }
+      p { font-size: 1rem; }
+    }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <article>
+      <h1>PM99 No-CD: Three Bytes, One Gate</h1>
+      <p class="dek">This started as a simple question: "What did the crack really change?" The answer turned out to be cleaner and more interesting than expected.</p>
+      <p class="meta">
+        <span class="chip">Target: <span class="mono">MANAGPRE.EXE</span></span>
+        <span class="chip">Protection: <span class="mono">DISK.ID</span> token check</span>
+        <span class="chip">Patch style: tiny in-place edits</span>
+      </p>
+
+      <div class="lead">
+        The crack does not delete protection logic wholesale. It does something subtler: it moves the lookup path from CD-centric behavior toward local-relative behavior, and removes one CD-ROM branch gate.
+      </div>
+
+      <h2>The Story in One Minute</h2>
+      <p>Original PM99 startup searches drives, treats CD-ROM as special, reads <span class="mono">DISK.ID</span>, and compares 7 bytes against built-in tokens. If this chain fails, you get the familiar message:</p>
+      <pre><code>"THE GAME CAN'T BE STARTED"
+You need the original PREMIER MANAGER 99 CDROM in your CD drive"</code></pre>
+      <p>The patched executable still expects <span class="mono">DISK.ID</span>, but it no longer relies on the same CD-only path/gate sequence.</p>
+
+      <h2>What We Actually Verified</h2>
+      <div class="snapshot">
+        <div class="tile">
+          <h3>On Disc</h3>
+          <p><span class="mono">disk.id</span> exists and is 7 bytes: <span class="mono">50 43 50 36 20 30 30</span> which is <span class="mono">PCP6 00</span>.</p>
+        </div>
+        <div class="tile">
+          <h3>In Binary</h3>
+          <p>Static token strings include <span class="mono">PFR5 00</span>, <span class="mono">PCA5 00</span>, <span class="mono">PCC6 00</span>, <span class="mono">PCP6 00</span>, <span class="mono">PCF6 00</span>.</p>
+        </div>
+        <div class="tile">
+          <h3>In Practice</h3>
+          <p>When local <span class="mono">DISK.ID</span> is renamed, startup fails. So validation still exists after patching.</p>
+        </div>
+      </div>
+
+      <h2>Before and After, Visually</h2>
+      <div class="diagram">
+        <svg width="910" height="266" viewBox="0 0 910 266" role="img" aria-label="PM99 check flow before and after patch">
+          <defs>
+            <marker id="arrow" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto">
+              <path d="M0,0 L8,4 L0,8 z" fill="#4f6788"></path>
+            </marker>
+          </defs>
+
+          <text x="16" y="23" style="font-weight:600; fill:#2c4f78;">Original flow</text>
+          <rect x="16" y="34" width="186" height="52" rx="8" fill="#ecf3fb" stroke="#c7d6eb"></rect>
+          <text x="28" y="56">Enumerate drives</text>
+          <text x="28" y="74">(GetLogicalDriveStringsA)</text>
+
+          <rect x="238" y="34" width="194" height="52" rx="8" fill="#ecf3fb" stroke="#c7d6eb"></rect>
+          <text x="250" y="56">Require CD drive type</text>
+          <text x="250" y="74">(GetDriveTypeA == CDROM)</text>
+
+          <rect x="468" y="34" width="220" height="52" rx="8" fill="#ecf3fb" stroke="#c7d6eb"></rect>
+          <text x="480" y="56">Read token from</text>
+          <text x="480" y="74">&lt;drive&gt;:\DISK.ID</text>
+
+          <rect x="724" y="34" width="168" height="52" rx="8" fill="#ecf3fb" stroke="#c7d6eb"></rect>
+          <text x="736" y="56">Compare 7-byte token</text>
+          <text x="736" y="74">against expected set</text>
+
+          <line x1="202" y1="60" x2="238" y2="60" stroke="#4f6788" stroke-width="2" marker-end="url(#arrow)"></line>
+          <line x1="432" y1="60" x2="468" y2="60" stroke="#4f6788" stroke-width="2" marker-end="url(#arrow)"></line>
+          <line x1="688" y1="60" x2="724" y2="60" stroke="#4f6788" stroke-width="2" marker-end="url(#arrow)"></line>
+
+          <text x="16" y="145" style="font-weight:600; fill:#9a3e27;">Patched flow</text>
+          <rect x="16" y="156" width="248" height="52" rx="8" fill="#fff1ec" stroke="#e6c4b8"></rect>
+          <text x="28" y="178">First lookup seed forced to '.'</text>
+          <text x="28" y="196">effective first probe: .\DISK.ID</text>
+
+          <rect x="300" y="156" width="258" height="52" rx="8" fill="#fff1ec" stroke="#e6c4b8"></rect>
+          <text x="312" y="178">CD-ROM branch gate removed</text>
+          <text x="312" y="196">(JNE replaced by NOP NOP)</text>
+
+          <rect x="594" y="156" width="298" height="52" rx="8" fill="#fff1ec" stroke="#e6c4b8"></rect>
+          <text x="606" y="178">Path template bytes adjusted</text>
+          <text x="606" y="196">to match revised lookup behavior</text>
+
+          <line x1="264" y1="182" x2="300" y2="182" stroke="#9a3e27" stroke-width="2" marker-end="url(#arrow)"></line>
+          <line x1="558" y1="182" x2="594" y2="182" stroke="#9a3e27" stroke-width="2" marker-end="url(#arrow)"></line>
+        </svg>
+      </div>
+
+      <h2>The Three Edits</h2>
+      <table>
+        <thead>
+          <tr>
+            <th>Address</th>
+            <th>Before</th>
+            <th>After</th>
+            <th>Meaning in Plain English</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>0x00408CF6</td>
+            <td>8A 44 24 10</td>
+            <td>66 B8 2E 00</td>
+            <td>Stop taking a runtime byte for path seed; force <span class="mono">'.'</span> instead.</td>
+          </tr>
+          <tr>
+            <td>0x00408D19</td>
+            <td>75 12</td>
+            <td>90 90</td>
+            <td>Remove one CD-ROM-dependent conditional jump.</td>
+          </tr>
+          <tr>
+            <td>0x0072C77D (data)</td>
+            <td>3A 5C</td>
+            <td>5C 00</td>
+            <td>Tweak embedded path template bytes so <span class="mono">:\</span> behavior shifts toward local-relative format.</td>
+          </tr>
+        </tbody>
+      </table>
+
+      <div class="diagram">
+        <svg width="910" height="110" viewBox="0 0 910 110" role="img" aria-label="Timeline of three patch edits">
+          <line x1="36" y1="56" x2="874" y2="56" stroke="#c7b9a0" stroke-width="3"></line>
+          <circle cx="170" cy="56" r="8" fill="#2c4f78"></circle>
+          <circle cx="455" cy="56" r="8" fill="#b44a2f"></circle>
+          <circle cx="740" cy="56" r="8" fill="#2a7b4a"></circle>
+          <text x="120" y="32">0x00408CF6</text>
+          <text x="90" y="84">force '.' seed</text>
+          <text x="405" y="32">0x00408D19</text>
+          <text x="372" y="84">remove JNE gate</text>
+          <text x="690" y="32">0x0072C77D</text>
+          <text x="648" y="84">patch path template</text>
+        </svg>
+      </div>
+
+      <h2>High-Level Model (Readable, Not Reconstructed)</h2>
+      <pre><code>// before
+for each drive:
+    if drive_type != CDROM: continue
+    if read7(drive + "\\DISK.ID") matches expected_token:
+        launch_game()
+show_insert_original_cd_message()
+
+// after (conceptually)
+if read7(".\\DISK.ID") matches expected_token:
+    launch_game()
+else:
+    // remaining path logic still exists, but one strict CD branch is gone
+    follow_relaxed_lookup_path()</code></pre>
+
+      <div class="test">
+        <strong>Reality check:</strong> if you rename local <span class="mono">DISK.ID</span>, patched startup fails. That is the strongest practical proof that this is a reroute patch, not a full check removal.
+      </div>
+
+      <h2>So What Was the Crack, Exactly?</h2>
+      <p>Not a giant crack intro. Not a packed stub. Not a replacement loader.</p>
+      <p>It is a surgical retargeting of path logic and branch behavior: the executable is nudged away from "must be CD device path" and toward "accept local marker path first," while still relying on token comparison.</p>
+
+      <p class="footer">Research scope: PM99 build-specific reverse engineering and behavior analysis.</p>
+    </article>
+  </div>
+</body>
+</html>

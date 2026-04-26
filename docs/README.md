@@ -9,24 +9,40 @@ These root-level docs define the project’s goals, constraints, and engineering
 - [../project_plan.md](../project_plan.md)
 - [../technical_considerations.md](../technical_considerations.md)
 
-## Canonical Docs (Research)
+## Canonical Product Docs (Upstream)
 
-Use these for current truth:
-- [CURRENT_ROADMAP.md](CURRENT_ROADMAP.md)
-- [GETTING_STARTED.md](GETTING_STARTED.md)
-- [EDITOR_README.md](EDITOR_README.md)
-- [OPERATIONS.md](OPERATIONS.md)
-- [ARCHITECTURE.md](ARCHITECTURE.md)
-- [DATA_FORMATS.md](DATA_FORMATS.md)
-- [REFERENCE/PLAYER_FIELDS.md](REFERENCE/PLAYER_FIELDS.md)
-- [REFERENCE/TEAM_FIELDS.md](REFERENCE/TEAM_FIELDS.md)
-- [DEVELOPER_GUIDE.md](DEVELOPER_GUIDE.md)
-- [PKF_STRING_SEARCHER.md](PKF_STRING_SEARCHER.md)
+Use these for current product truth:
+- [../upstream/pm99-skezmod-db-editor/docs/CURRENT_ROADMAP.md](../upstream/pm99-skezmod-db-editor/docs/CURRENT_ROADMAP.md)
+- [../upstream/pm99-skezmod-db-editor/docs/GETTING_STARTED.md](../upstream/pm99-skezmod-db-editor/docs/GETTING_STARTED.md)
+- [../upstream/pm99-skezmod-db-editor/docs/EDITOR_README.md](../upstream/pm99-skezmod-db-editor/docs/EDITOR_README.md)
+- [../upstream/pm99-skezmod-db-editor/docs/OPERATIONS.md](../upstream/pm99-skezmod-db-editor/docs/OPERATIONS.md)
+- [../upstream/pm99-skezmod-db-editor/docs/ARCHITECTURE.md](../upstream/pm99-skezmod-db-editor/docs/ARCHITECTURE.md)
+- [../upstream/pm99-skezmod-db-editor/docs/ARCHITECTURE_MAP.md](../upstream/pm99-skezmod-db-editor/docs/ARCHITECTURE_MAP.md)
+- [../upstream/pm99-skezmod-db-editor/docs/DATA_FORMATS.md](../upstream/pm99-skezmod-db-editor/docs/DATA_FORMATS.md)
+- [../upstream/pm99-skezmod-db-editor/docs/REFERENCE/PLAYER_FIELDS.md](../upstream/pm99-skezmod-db-editor/docs/REFERENCE/PLAYER_FIELDS.md)
+- [../upstream/pm99-skezmod-db-editor/docs/REFERENCE/TEAM_FIELDS.md](../upstream/pm99-skezmod-db-editor/docs/REFERENCE/TEAM_FIELDS.md)
+- [../upstream/pm99-skezmod-db-editor/docs/DEVELOPER_GUIDE.md](../upstream/pm99-skezmod-db-editor/docs/DEVELOPER_GUIDE.md)
+- [../upstream/pm99-skezmod-db-editor/docs/PKF_STRING_SEARCHER.md](../upstream/pm99-skezmod-db-editor/docs/PKF_STRING_SEARCHER.md)
+
+## PM99RE Local Docs
+
+Local files in this directory are research context, snapshots, and archive material.
+If they diverge from upstream product docs, treat upstream as authoritative.
+
+Current handover notes for upstream implementation planning:
+- [HANDOVER_FINE_POSITIONS_2026-04-08.md](HANDOVER_FINE_POSITIONS_2026-04-08.md)
+- [HISTORY/agent_work/2026-04-09_manchester_united_staff_two_run_validation.md](HISTORY/agent_work/2026-04-09_manchester_united_staff_two_run_validation.md)
+- [HISTORY/agent_work/2026-04-09_minifoto_replace_proof_harness.md](HISTORY/agent_work/2026-04-09_minifoto_replace_proof_harness.md)
 
 ## Historical Context
 
 These are useful for provenance and background, but they are not authoritative:
 - [HISTORY/README.md](HISTORY/README.md)
+- Notable retained investigations:
+  [HISTORY/Investigations/PLAYER_BITMAP_ARCHIVES.md](HISTORY/Investigations/PLAYER_BITMAP_ARCHIVES.md),
+  [HISTORY/Investigations/PLAYER_BITMAP_COVERAGE_AUDIT.md](HISTORY/Investigations/PLAYER_BITMAP_COVERAGE_AUDIT.md),
+  [HISTORY/Investigations/MINIFOTO_WRITE_SAFETY_V1.md](HISTORY/Investigations/MINIFOTO_WRITE_SAFETY_V1.md),
+  [HISTORY/Investigations/STADIUM_METADATA_DISCOVERY.md](HISTORY/Investigations/STADIUM_METADATA_DISCOVERY.md)
 
 ## Raw Archive
 

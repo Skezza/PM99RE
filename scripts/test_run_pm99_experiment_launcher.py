@@ -30,6 +30,7 @@ GENERIC_EXPERIMENTS = [
     ("staff-determinism", "run_stoke_staff_determinism.sh"),
     ("vanilla-profile-capture", "run_stoke_vanilla_profile_capture.sh"),
     ("premier-offer-capture", "run_premier_offer_capture.sh"),
+    ("selector-discovery-capture", "run_selector_discovery_capture.sh"),
 ]
 
 

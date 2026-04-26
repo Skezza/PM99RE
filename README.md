@@ -36,8 +36,5 @@ Helper wrappers:
 
 ## Key Documents
 
-- `docs/GETTING_STARTED.md`
-- `docs/ARCHITECTURE.md`
-- `docs/DATA_FORMATS.md`
-- `docs/REFERENCE/PLAYER_FIELDS.md`
-- `docs/REFERENCE/TEAM_FIELDS.md`
+- Product docs index: `upstream/pm99-skezmod-db-editor/docs/README.md`
+- PM99RE docs index: `docs/README.md`

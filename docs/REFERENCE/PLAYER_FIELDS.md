@@ -87,6 +87,95 @@ For indexed `DMFIv1.0` JUG entries, the parser can also recover a richer metadat
   - Stored XOR’d
   - Current evidence indicates this is kilograms in indexed JUG payloads
 
+## Fine Role Slots (Tactics `ROL.` Dropdown)
+
+This section documents the editable fine-role bytes that drive the black-arrow
+`ROL.` dropdown on the in-game `TACTICS` screen.
+
+### What Is Stored vs Computed
+
+- Stored in `JUG98030.FDI`: per-player fine role slots (codes).
+- Not stored in `JUG98030.FDI`: the displayed role percentages.
+- The game computes percentages from slot-role compatibility at runtime.
+
+### Binary Evidence (Ghidra, `MANAGPRE.EXE`)
+
+- `FUN_004afd80 @ 0x004afd80`
+  - Consumes six consecutive role-like bytes from the decoded player stream.
+  - Writes them into player struct offsets `+0x1d .. +0x22`.
+  - Mirrors slot0 into `+0x23`.
+- `FUN_00491980 @ 0x00491980`
+  - Builds the `ROL.` dropdown using pointer table `0x00735340`.
+  - Iterates role index `1..18`, calls `FUN_004b13f0`, and stores `100 - penalty`
+    as the shown percentage.
+- `FUN_004b13f0 @ 0x004b13f0`
+  - Reads the six fine slots from `[player + 0x1d + i]` (`i=0..5`).
+  - Computes the minimum penalty across those slots for the requested role.
+  - Penalty constants include `0`, `5`, `0x0f`, `0x18`, `0x28`, `0x46`
+    (displayed as `100`, `95`, `85`, `76`, `60`, `30` via `100 - penalty`).
+- `0x004901b5` and `0x00490211`
+  - `0x004901b5` indexes coarse POS label table (`0x00735400`) using `[player + 0x1c]`.
+  - `0x00490211` indexes fine `ROL.` label table (`0x00735340`) using `[player + 0x23]`.
+
+### Fine Role Label Table
+
+The game’s fine-role string table starts at `0x00735340` and contains 18 roles:
+
+1. Goalkeeper
+2. Right Back
+3. Left Back
+4. Sweeper
+5. Inside Centre Left
+6. Inside Centre Right
+7. Right Midfielder
+8. Inside Right
+9. Centre Forward
+10. Central Midfielder
+11. Left Midfielder
+12. Right Winger
+13. Central Striker
+14. Left Winger
+15. Defensive Midfielder
+16. Right Forward
+17. Left Forward
+18. Inside Left
+
+### Database Decode Rules (Editable Bytes)
+
+The six fine slots are editable in the decoded payload (before re-encoding).
+
+- Marker-shaped rows:
+  - Slot window is `name_end - 1 .. name_end + 4` (6 bytes).
+  - Decode rule per byte: `xor = byte ^ 0x61`; `code = xor - 1` when `xor > 0`, else `98`.
+- Indexed `dd6361` rows:
+  - Slot window starts at `indexed_suffix_anchor + 2`.
+  - Read up to 6 bytes while `xor = (byte ^ 0x61)` stays in `1..18`.
+  - `code = xor - 1`.
+
+`code` range `0..17` maps to fine roles; `98` is unassigned.
+
+### Reproducible Stoke Evidence
+
+- Repro command:
+
+```bash
+python3 scripts/probe_role_slot_forensics.py \
+  --team-file work/stoke_capture_225942_dbdat/EQ98030.FDI \
+  --player-file work/stoke_capture_225942_dbdat/JUG98030.FDI \
+  --team-query Stoke \
+  --output-dir work \
+  --json
+```
+
+- Byte/offset artifacts:
+  - `work/stoke_city_role_slots_manifest.json`
+  - `work/stoke_city_role_slots_table.csv`
+  - `work/stoke_city_role_slots_summary.json`
+- Example (`Larus SIGURDSSON`, slot 3, `dd6361`):
+  - `indexed_anchor = 38`
+  - active fine-role bytes at offsets `40` and `41`
+  - decoded codes `5;4` => `Inside Centre Right;Inside Centre Left`
+
 ## Attributes
 
 - The current parser reads up to 12 skill bytes from the trailing attribute window.
@@ -191,6 +280,15 @@ For indexed `DMFIv1.0` JUG entries, the parser can also recover a richer metadat
 - `DBASEPRE.EXE` player-view code also treats the in-memory physical stat bytes as adjacent values: it reads `[player + 0x4E]` as a centimetre height value (then converts it to feet/inches for display) and `[player + 0x4F]` as a raw weight-like value after drawing the `HEIGHT` / `WEIGHT` labels. That strongly corroborates the indexed JUG `height`/`weight` mapping.
 - `DBASEPRE.EXE`'s indexed player parser helper (`FUN_0043d170`) also places the first two bytes of the indexed suffix block into struct offsets `[player + 0x20]` and `[player + 0x4C]`. These bytes are now surfaced as raw `indexed_unknown_0` / `indexed_unknown_1` probe values.
 - `DBASEPRE.EXE` portrait rendering also confirms that indexed suffix bytes `name_suffix + 2 .. + 7` are the variable-length face-component sequence used to build the player head graphic.
+- Separate from those per-record face-component bytes, the mirrored game corpus
+  now also exposes a distinct player mini-photo asset archive:
+  `FDI-PKF/DBDAT/MINIFOTO.PKF`. That archive currently yields `1354`
+  `J96#####.BMP` player-photo records, and it should be treated as a separate
+  asset contract rather than as an inline `JUG98030.FDI` field family.
+- The current best colour render path for `MINIFOTO` uses an embedded RIFF
+  palette from `DAT.PKF` (`ba71c6264fdd9ad0`, with identical observed output to
+  `2d2bceb5304c1937` for `MINIFOTO`). Loose `SIMULPCF6.PAL` is a usable
+  fallback for discovery, but it is visibly mis-paletted for portraits.
 - Indexed suffix bytes `name_suffix + 9` and `+10` are now surfaced as raw `indexed_unknown_9` / `indexed_unknown_10` values. They behave like low-cardinality categorical flags, but their gameplay meaning is still unresolved.
 - The `player-inspect` CLI path exposes the indexed suffix anchor and these raw probe bytes directly for real-record comparisons.
 - The GUI now exposes the same confirmed indexed snapshot through `Inspect Player Metadata...`, using the same parser-backed backend contract as `player-inspect` in a structured dialog.

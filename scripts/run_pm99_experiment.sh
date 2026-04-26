@@ -37,6 +37,7 @@ Experiments:
   staff-determinism
   vanilla-profile-capture
   premier-offer-capture
+  selector-discovery-capture
 
 Options:
   --worker <name>           Required PM99 worker lane
@@ -131,6 +132,10 @@ select_wrapper() {
       ;;
     premier-offer-capture)
       wrapper_path="${RUNNER_REPO_ROOT}/scripts/pm99_runner/run_premier_offer_capture.sh"
+      build_child_command "${wrapper_path}" --run-tag "${RUN_TAG}" --worker "${PM99_RUNNER_WORKER_NAME}" "${EXTRA_ARGS[@]}"
+      ;;
+    selector-discovery-capture)
+      wrapper_path="${RUNNER_REPO_ROOT}/scripts/pm99_runner/run_selector_discovery_capture.sh"
       build_child_command "${wrapper_path}" --run-tag "${RUN_TAG}" --worker "${PM99_RUNNER_WORKER_NAME}" "${EXTRA_ARGS[@]}"
       ;;
     *)
