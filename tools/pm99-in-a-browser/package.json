@@ -1,0 +1,20 @@
+{
+  "name": "pm99-in-a-browser",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "serve": "./scripts/serve.sh",
+    "test": "playwright test",
+    "test:payloads": "playwright test tests/payloads.spec.js",
+    "test:headed": "playwright test --headed",
+    "payloads:open": "python3 scripts/fetch_open_emulator_payloads.py",
+    "check": "node --check src/app.js && node --check src/backends/boxedwine.js && node --check src/backends/v86.js && node --check src/utils.js && node --check boxedwine/launcher.js && node --check boxedwine/static/boxedwine-launcher.js && node --check v86/js/v86-launcher.js"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.59.1"
+  },
+  "dependencies": {
+    "v86": "^0.5.355"
+  }
+}

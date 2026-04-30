@@ -6,6 +6,8 @@ PM99RE is the research/integration repository for Premier Manager 99 reverse eng
 
 - `upstream/pm99-skezmod-db-editor` is the source of truth for editor product code.
 - `upstream/pm99-skezmod-patcher` is the source of truth for shipped patch tooling.
+- `upstream/pm99-runner` is the source of truth for runtime/remote runner automation.
+- `tools/` contains standalone research/viewer tools that are not product editor or patcher code, including the PKF viewer and browser runtime harness.
 - PM99RE keeps research notes, probes, validation scripts, and local workspace data.
 
 PM99RE must not carry parallel editor implementation code.
@@ -14,15 +16,18 @@ PM99RE must not carry parallel editor implementation code.
 
 - `DBDAT/` exists as a local drop folder.
 - `.FDI`, `.PKF`, and `.EXE` files are ignored and must remain local-only.
+- Browser runtime assets such as ISO/ZIP/WASM/disk images must remain local-only inside ignored tool asset directories.
 - `.local/` remains the primary local game/workspace area.
+- `work/`, `worktrees/`, `artifacts/`, `tbc/`, and `FDI-PKF/` are local-only scratch/artifact areas.
 
 ## Daily Workflow
 
 1. Do reverse-engineering and experiments in PM99RE.
 2. Implement reusable editor changes in `upstream/pm99-skezmod-db-editor`.
 3. Implement reusable patch changes in `upstream/pm99-skezmod-patcher`.
-4. Merge upstream repos first.
-5. Bump PM99RE submodule pointers to merged commits.
+4. Implement reusable runner changes in `upstream/pm99-runner`.
+5. Merge upstream repos first.
+6. Bump PM99RE submodule pointers to merged commits.
 
 Helper wrappers:
 - `scripts/dev_editor.sh`
@@ -31,6 +36,7 @@ Helper wrappers:
 ## Guardrails
 
 - `scripts/check_repo_boundary.py` enforces PM99RE repository boundaries.
+- `scripts/check_repo_state.py` checks clean root/submodule state for reproducible handoff.
 - CI runs this check on pushes and pull requests.
 - Local pre-commit hook runs the same check via `.githooks/pre-commit` (hooks path: `.githooks`).
 

@@ -22,6 +22,24 @@ typedef struct TraceDirectDraw4 {
     LONG refs;
 } TraceDirectDraw4;
 
+typedef struct EnumModesContext {
+    LPDDENUMMODESCALLBACK callback;
+    LPVOID context;
+    DWORD seen;
+    DWORD passed;
+    DWORD filtered;
+    const char *source;
+} EnumModesContext;
+
+typedef struct EnumModes2Context {
+    LPDDENUMMODESCALLBACK2 callback;
+    LPVOID context;
+    DWORD seen;
+    DWORD passed;
+    DWORD filtered;
+    const char *source;
+} EnumModes2Context;
+
 static const GUID PM99_IID_IDirectDraw4 = {
     0x9c59509a,
     0x39bd,
@@ -78,6 +96,88 @@ static int env_flag_enabled(const char *name)
         || lstrcmpiA(value, "on") == 0;
 }
 
+static int enum_mode_filter_enabled(void)
+{
+    return env_flag_enabled("PM99_DDRAW_FILTER_ENUM_MODES_640");
+}
+
+static int enum_mode_injection_enabled(void)
+{
+    return env_flag_enabled("PM99_DDRAW_INJECT_ENUM_MODE_640");
+}
+
+static int force_set_display_mode_ok_enabled(void)
+{
+    return env_flag_enabled("PM99_DDRAW_FORCE_SET_DISPLAY_MODE_OK");
+}
+
+static int mode_desc_matches_640x480x16(LPDDSURFACEDESC desc)
+{
+    if (!desc) {
+        return 0;
+    }
+    return desc->dwWidth == 640
+        && desc->dwHeight == 480
+        && desc->ddpfPixelFormat.dwRGBBitCount == 16;
+}
+
+static int mode_desc2_matches_640x480x16(LPDDSURFACEDESC2 desc)
+{
+    if (!desc) {
+        return 0;
+    }
+    return desc->dwWidth == 640
+        && desc->dwHeight == 480
+        && desc->ddpfPixelFormat.dwRGBBitCount == 16;
+}
+
+static void fill_synthetic_640x480x16_desc(LPDDSURFACEDESC desc)
+{
+    ZeroMemory(desc, sizeof(*desc));
+    desc->dwSize = sizeof(*desc);
+    desc->dwFlags = DDSD_WIDTH | DDSD_HEIGHT | DDSD_PITCH | DDSD_PIXELFORMAT;
+    desc->dwWidth = 640;
+    desc->dwHeight = 480;
+    desc->lPitch = 1280;
+    desc->ddpfPixelFormat.dwSize = sizeof(DDPIXELFORMAT);
+    desc->ddpfPixelFormat.dwFlags = DDPF_RGB;
+    desc->ddpfPixelFormat.dwRGBBitCount = 16;
+    desc->ddpfPixelFormat.dwRBitMask = 0x0000F800;
+    desc->ddpfPixelFormat.dwGBitMask = 0x000007E0;
+    desc->ddpfPixelFormat.dwBBitMask = 0x0000001F;
+}
+
+static void fill_synthetic_640x480x16_desc2(LPDDSURFACEDESC2 desc)
+{
+    ZeroMemory(desc, sizeof(*desc));
+    desc->dwSize = sizeof(*desc);
+    desc->dwFlags = DDSD_WIDTH | DDSD_HEIGHT | DDSD_PITCH | DDSD_PIXELFORMAT;
+    desc->dwWidth = 640;
+    desc->dwHeight = 480;
+    desc->lPitch = 1280;
+    desc->ddpfPixelFormat.dwSize = sizeof(DDPIXELFORMAT);
+    desc->ddpfPixelFormat.dwFlags = DDPF_RGB;
+    desc->ddpfPixelFormat.dwRGBBitCount = 16;
+    desc->ddpfPixelFormat.dwRBitMask = 0x0000F800;
+    desc->ddpfPixelFormat.dwGBitMask = 0x000007E0;
+    desc->ddpfPixelFormat.dwBBitMask = 0x0000001F;
+}
+
+static HRESULT maybe_force_set_display_mode_ok(HRESULT real_hr, DWORD width, DWORD height, DWORD bpp, const char *source)
+{
+    if (
+        FAILED(real_hr)
+        && force_set_display_mode_ok_enabled()
+        && width == 640
+        && height == 480
+        && bpp == 16
+    ) {
+        trace_log("%s force_set_display_mode_ok real_hr=0x%08lX returning DD_OK", source, (unsigned long)real_hr);
+        return DD_OK;
+    }
+    return real_hr;
+}
+
 static void normalize_display_mode_desc(LPDDSURFACEDESC desc, const char *source)
 {
     if (!desc || !env_flag_enabled("PM99_DDRAW_NORMALIZE_DISPLAY_MODE")) {
@@ -113,6 +213,42 @@ static void normalize_display_mode_desc(LPDDSURFACEDESC desc, const char *source
     );
 }
 
+static void clamp_huge_surface_desc(LPDDSURFACEDESC desc, const char *source)
+{
+    if (!desc || !env_flag_enabled("PM99_DDRAW_CLAMP_HUGE_SURFACES")) {
+        return;
+    }
+    if (desc->dwWidth <= 10000 && desc->dwHeight <= 10000) {
+        return;
+    }
+    trace_log(
+        "%s clamp_huge_surface before width=%lu height=%lu pitch=%ld flags=0x%08lX caps=0x%08lX pixelflags=0x%08lX rgbbits=%lu",
+        source,
+        desc->dwWidth,
+        desc->dwHeight,
+        desc->lPitch,
+        desc->dwFlags,
+        desc->ddsCaps.dwCaps,
+        desc->ddpfPixelFormat.dwFlags,
+        desc->ddpfPixelFormat.dwRGBBitCount
+    );
+    desc->dwWidth = 640;
+    desc->dwHeight = 480;
+    desc->lPitch = 0;
+    desc->dwFlags |= DDSD_WIDTH | DDSD_HEIGHT;
+    trace_log(
+        "%s clamp_huge_surface after width=%lu height=%lu pitch=%ld flags=0x%08lX caps=0x%08lX pixelflags=0x%08lX rgbbits=%lu",
+        source,
+        desc->dwWidth,
+        desc->dwHeight,
+        desc->lPitch,
+        desc->dwFlags,
+        desc->ddsCaps.dwCaps,
+        desc->ddpfPixelFormat.dwFlags,
+        desc->ddpfPixelFormat.dwRGBBitCount
+    );
+}
+
 static void normalize_display_mode_desc2(LPDDSURFACEDESC2 desc, const char *source)
 {
     if (!desc || !env_flag_enabled("PM99_DDRAW_NORMALIZE_DISPLAY_MODE")) {
@@ -145,6 +281,44 @@ static void normalize_display_mode_desc2(LPDDSURFACEDESC2 desc, const char *sour
         desc->lPitch,
         desc->ddpfPixelFormat.dwRGBBitCount,
         desc->dwFlags
+    );
+}
+
+static void clamp_huge_surface_desc2(LPDDSURFACEDESC2 desc, const char *source)
+{
+    if (!desc || !env_flag_enabled("PM99_DDRAW_CLAMP_HUGE_SURFACES")) {
+        return;
+    }
+    if (desc->dwWidth <= 10000 && desc->dwHeight <= 10000) {
+        return;
+    }
+    trace_log(
+        "%s clamp_huge_surface before width=%lu height=%lu pitch=%ld flags=0x%08lX caps=0x%08lX caps2=0x%08lX pixelflags=0x%08lX rgbbits=%lu",
+        source,
+        desc->dwWidth,
+        desc->dwHeight,
+        desc->lPitch,
+        desc->dwFlags,
+        desc->ddsCaps.dwCaps,
+        desc->ddsCaps.dwCaps2,
+        desc->ddpfPixelFormat.dwFlags,
+        desc->ddpfPixelFormat.dwRGBBitCount
+    );
+    desc->dwWidth = 640;
+    desc->dwHeight = 480;
+    desc->lPitch = 0;
+    desc->dwFlags |= DDSD_WIDTH | DDSD_HEIGHT;
+    trace_log(
+        "%s clamp_huge_surface after width=%lu height=%lu pitch=%ld flags=0x%08lX caps=0x%08lX caps2=0x%08lX pixelflags=0x%08lX rgbbits=%lu",
+        source,
+        desc->dwWidth,
+        desc->dwHeight,
+        desc->lPitch,
+        desc->dwFlags,
+        desc->ddsCaps.dwCaps,
+        desc->ddsCaps.dwCaps2,
+        desc->ddpfPixelFormat.dwFlags,
+        desc->ddpfPixelFormat.dwRGBBitCount
     );
 }
 
@@ -267,6 +441,120 @@ static void log_surface_desc2(const char *prefix, LPDDSURFACEDESC2 desc)
     );
 }
 
+static HRESULT WINAPI trace_enum_display_mode_callback(LPDDSURFACEDESC desc, LPVOID context)
+{
+    EnumModesContext *ctx = (EnumModesContext *)context;
+    HRESULT callback_result;
+
+    ctx->seen++;
+    trace_log(
+        "%s callback mode #%lu width=%lu height=%lu pitch=%ld flags=0x%08lX pixelflags=0x%08lX rgbbits=%lu",
+        ctx->source,
+        ctx->seen,
+        desc ? desc->dwWidth : 0,
+        desc ? desc->dwHeight : 0,
+        desc ? desc->lPitch : 0,
+        desc ? desc->dwFlags : 0,
+        desc ? desc->ddpfPixelFormat.dwFlags : 0,
+        desc ? desc->ddpfPixelFormat.dwRGBBitCount : 0
+    );
+
+    if (enum_mode_filter_enabled() && !mode_desc_matches_640x480x16(desc)) {
+        ctx->filtered++;
+        trace_log("%s callback mode #%lu filtered", ctx->source, ctx->seen);
+        return DDENUMRET_OK;
+    }
+
+    ctx->passed++;
+    callback_result = ctx->callback(desc, ctx->context);
+    trace_log("%s callback mode #%lu game_result=0x%08lX", ctx->source, ctx->seen, (unsigned long)callback_result);
+    return callback_result;
+}
+
+static HRESULT WINAPI trace_enum_display_mode2_callback(LPDDSURFACEDESC2 desc, LPVOID context)
+{
+    EnumModes2Context *ctx = (EnumModes2Context *)context;
+    HRESULT callback_result;
+
+    ctx->seen++;
+    trace_log(
+        "%s callback mode #%lu width=%lu height=%lu pitch=%ld flags=0x%08lX pixelflags=0x%08lX rgbbits=%lu",
+        ctx->source,
+        ctx->seen,
+        desc ? desc->dwWidth : 0,
+        desc ? desc->dwHeight : 0,
+        desc ? desc->lPitch : 0,
+        desc ? desc->dwFlags : 0,
+        desc ? desc->ddpfPixelFormat.dwFlags : 0,
+        desc ? desc->ddpfPixelFormat.dwRGBBitCount : 0
+    );
+
+    if (enum_mode_filter_enabled() && !mode_desc2_matches_640x480x16(desc)) {
+        ctx->filtered++;
+        trace_log("%s callback mode #%lu filtered", ctx->source, ctx->seen);
+        return DDENUMRET_OK;
+    }
+
+    ctx->passed++;
+    callback_result = ctx->callback(desc, ctx->context);
+    trace_log("%s callback mode #%lu game_result=0x%08lX", ctx->source, ctx->seen, (unsigned long)callback_result);
+    return callback_result;
+}
+
+static void inject_synthetic_enum_mode_if_needed(EnumModesContext *ctx)
+{
+    DDSURFACEDESC synthetic_desc;
+    HRESULT callback_result;
+
+    if (!enum_mode_injection_enabled() || !ctx || ctx->passed != 0) {
+        return;
+    }
+
+    fill_synthetic_640x480x16_desc(&synthetic_desc);
+    ctx->seen++;
+    ctx->passed++;
+    trace_log(
+        "%s callback mode #%lu synthetic width=%lu height=%lu pitch=%ld flags=0x%08lX pixelflags=0x%08lX rgbbits=%lu",
+        ctx->source,
+        ctx->seen,
+        synthetic_desc.dwWidth,
+        synthetic_desc.dwHeight,
+        synthetic_desc.lPitch,
+        synthetic_desc.dwFlags,
+        synthetic_desc.ddpfPixelFormat.dwFlags,
+        synthetic_desc.ddpfPixelFormat.dwRGBBitCount
+    );
+    callback_result = ctx->callback(&synthetic_desc, ctx->context);
+    trace_log("%s callback synthetic game_result=0x%08lX", ctx->source, (unsigned long)callback_result);
+}
+
+static void inject_synthetic_enum_mode2_if_needed(EnumModes2Context *ctx)
+{
+    DDSURFACEDESC2 synthetic_desc;
+    HRESULT callback_result;
+
+    if (!enum_mode_injection_enabled() || !ctx || ctx->passed != 0) {
+        return;
+    }
+
+    fill_synthetic_640x480x16_desc2(&synthetic_desc);
+    ctx->seen++;
+    ctx->passed++;
+    trace_log(
+        "%s callback mode #%lu synthetic width=%lu height=%lu pitch=%ld flags=0x%08lX pixelflags=0x%08lX rgbbits=%lu",
+        ctx->source,
+        ctx->seen,
+        synthetic_desc.dwWidth,
+        synthetic_desc.dwHeight,
+        synthetic_desc.lPitch,
+        synthetic_desc.dwFlags,
+        synthetic_desc.ddpfPixelFormat.dwFlags,
+        synthetic_desc.ddpfPixelFormat.dwRGBBitCount
+    );
+    callback_result = ctx->callback(&synthetic_desc, ctx->context);
+    trace_log("%s callback synthetic game_result=0x%08lX", ctx->source, (unsigned long)callback_result);
+}
+
 static HRESULT WINAPI trace_ddraw_QueryInterface(LPDIRECTDRAW iface, REFIID riid, LPVOID *out)
 {
     TraceDirectDraw *self = trace_from_iface(iface);
@@ -334,6 +622,7 @@ static HRESULT WINAPI trace_ddraw_CreateSurface(LPDIRECTDRAW iface, LPDDSURFACED
     TraceDirectDraw *self = trace_from_iface(iface);
     HRESULT hr;
     log_surface_desc("IDirectDraw::CreateSurface input", desc);
+    clamp_huge_surface_desc(desc, "IDirectDraw::CreateSurface");
     hr = self->real->lpVtbl->CreateSurface(self->real, desc, surface, outer);
     trace_log("IDirectDraw::CreateSurface hr=0x%08lX %s surface=%p", (unsigned long)hr, hr_state(hr), surface ? *surface : NULL);
     return hr;
@@ -350,10 +639,32 @@ static HRESULT WINAPI trace_ddraw_DuplicateSurface(LPDIRECTDRAW iface, LPDIRECTD
 static HRESULT WINAPI trace_ddraw_EnumDisplayModes(LPDIRECTDRAW iface, DWORD flags, LPDDSURFACEDESC desc, LPVOID context, LPDDENUMMODESCALLBACK callback)
 {
     TraceDirectDraw *self = trace_from_iface(iface);
+    EnumModesContext wrapped_context;
     HRESULT hr;
     log_surface_desc("IDirectDraw::EnumDisplayModes filter", desc);
-    hr = self->real->lpVtbl->EnumDisplayModes(self->real, flags, desc, context, callback);
-    trace_log("IDirectDraw::EnumDisplayModes flags=0x%08lX callback=%p hr=0x%08lX %s", flags, callback, (unsigned long)hr, hr_state(hr));
+    if (callback) {
+        ZeroMemory(&wrapped_context, sizeof(wrapped_context));
+        wrapped_context.callback = callback;
+        wrapped_context.context = context;
+        wrapped_context.source = "IDirectDraw::EnumDisplayModes";
+        hr = self->real->lpVtbl->EnumDisplayModes(self->real, flags, desc, &wrapped_context, trace_enum_display_mode_callback);
+        if (SUCCEEDED(hr)) {
+            inject_synthetic_enum_mode_if_needed(&wrapped_context);
+        }
+        trace_log(
+            "IDirectDraw::EnumDisplayModes flags=0x%08lX callback=%p seen=%lu passed=%lu filtered=%lu hr=0x%08lX %s",
+            flags,
+            callback,
+            wrapped_context.seen,
+            wrapped_context.passed,
+            wrapped_context.filtered,
+            (unsigned long)hr,
+            hr_state(hr)
+        );
+    } else {
+        hr = self->real->lpVtbl->EnumDisplayModes(self->real, flags, desc, context, callback);
+        trace_log("IDirectDraw::EnumDisplayModes flags=0x%08lX callback=NULL hr=0x%08lX %s", flags, (unsigned long)hr, hr_state(hr));
+    }
     return hr;
 }
 
@@ -467,6 +778,7 @@ static HRESULT WINAPI trace_ddraw_SetDisplayMode(LPDIRECTDRAW iface, DWORD width
     TraceDirectDraw *self = trace_from_iface(iface);
     HRESULT hr = self->real->lpVtbl->SetDisplayMode(self->real, width, height, bpp);
     trace_log("IDirectDraw::SetDisplayMode width=%lu height=%lu bpp=%lu hr=0x%08lX %s", width, height, bpp, (unsigned long)hr, hr_state(hr));
+    hr = maybe_force_set_display_mode_ok(hr, width, height, bpp, "IDirectDraw::SetDisplayMode");
     return hr;
 }
 
@@ -571,6 +883,7 @@ static HRESULT WINAPI trace_ddraw4_CreateSurface(LPDIRECTDRAW4 iface, LPDDSURFAC
     TraceDirectDraw4 *self = trace4_from_iface(iface);
     HRESULT hr;
     log_surface_desc2("IDirectDraw4::CreateSurface input", desc);
+    clamp_huge_surface_desc2(desc, "IDirectDraw4::CreateSurface");
     hr = self->real->lpVtbl->CreateSurface(self->real, desc, surface, outer);
     trace_log("IDirectDraw4::CreateSurface hr=0x%08lX %s surface=%p", (unsigned long)hr, hr_state(hr), surface ? *surface : NULL);
     return hr;
@@ -587,10 +900,32 @@ static HRESULT WINAPI trace_ddraw4_DuplicateSurface(LPDIRECTDRAW4 iface, LPDIREC
 static HRESULT WINAPI trace_ddraw4_EnumDisplayModes(LPDIRECTDRAW4 iface, DWORD flags, LPDDSURFACEDESC2 desc, LPVOID context, LPDDENUMMODESCALLBACK2 callback)
 {
     TraceDirectDraw4 *self = trace4_from_iface(iface);
+    EnumModes2Context wrapped_context;
     HRESULT hr;
     log_surface_desc2("IDirectDraw4::EnumDisplayModes filter", desc);
-    hr = self->real->lpVtbl->EnumDisplayModes(self->real, flags, desc, context, callback);
-    trace_log("IDirectDraw4::EnumDisplayModes flags=0x%08lX callback=%p hr=0x%08lX %s", flags, callback, (unsigned long)hr, hr_state(hr));
+    if (callback) {
+        ZeroMemory(&wrapped_context, sizeof(wrapped_context));
+        wrapped_context.callback = callback;
+        wrapped_context.context = context;
+        wrapped_context.source = "IDirectDraw4::EnumDisplayModes";
+        hr = self->real->lpVtbl->EnumDisplayModes(self->real, flags, desc, &wrapped_context, trace_enum_display_mode2_callback);
+        if (SUCCEEDED(hr)) {
+            inject_synthetic_enum_mode2_if_needed(&wrapped_context);
+        }
+        trace_log(
+            "IDirectDraw4::EnumDisplayModes flags=0x%08lX callback=%p seen=%lu passed=%lu filtered=%lu hr=0x%08lX %s",
+            flags,
+            callback,
+            wrapped_context.seen,
+            wrapped_context.passed,
+            wrapped_context.filtered,
+            (unsigned long)hr,
+            hr_state(hr)
+        );
+    } else {
+        hr = self->real->lpVtbl->EnumDisplayModes(self->real, flags, desc, context, callback);
+        trace_log("IDirectDraw4::EnumDisplayModes flags=0x%08lX callback=NULL hr=0x%08lX %s", flags, (unsigned long)hr, hr_state(hr));
+    }
     return hr;
 }
 
@@ -704,6 +1039,7 @@ static HRESULT WINAPI trace_ddraw4_SetDisplayMode(LPDIRECTDRAW4 iface, DWORD wid
     TraceDirectDraw4 *self = trace4_from_iface(iface);
     HRESULT hr = self->real->lpVtbl->SetDisplayMode(self->real, width, height, bpp, refresh, flags);
     trace_log("IDirectDraw4::SetDisplayMode width=%lu height=%lu bpp=%lu refresh=%lu flags=0x%08lX hr=0x%08lX %s", width, height, bpp, refresh, flags, (unsigned long)hr, hr_state(hr));
+    hr = maybe_force_set_display_mode_ok(hr, width, height, bpp, "IDirectDraw4::SetDisplayMode");
     return hr;
 }
 

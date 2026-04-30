@@ -33,4 +33,8 @@ jobs:
 
       - name: Show submodule status
         run: |
-          git submodule status
+          git submodule status --recursive
+
+      - name: Enforce clean reproducible checkout
+        run: |
+          python scripts/check_repo_state.py

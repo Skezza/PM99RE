@@ -3,9 +3,11 @@
 This directory is now PM99RE research/orchestration only.
 
 Product development wrappers:
-- `dev_editor.sh` runs commands in `upstream/pm99-skezmod-db-editor`
-- `dev_patcher.sh` runs commands in `upstream/pm99-skezmod-patcher`
-- `check_repo_boundary.py` enforces that PM99RE does not track editor product paths
+- `dev_editor.sh` runs commands in `upstream/pm99-skezmod-db-editor` by default; set `PM99_EDITOR_ROOT` for an alternate checkout
+- `dev_patcher.sh` runs commands in `upstream/pm99-skezmod-patcher` by default; set `PM99_PATCHER_ROOT` for an alternate checkout
+- `check_repo_boundary.py` enforces that PM99RE does not track product paths, local artifact roots, or PM99 binaries
+- `check_repo_boundary.py --check-local` also flags root `app/`, `tests/`, or misplaced `pm99-in-a-browser/` leftovers during local cleanup
+- `check_repo_state.py` verifies clean root/submodule state for reproducible handoff
 - `create_pm99_isolated_run.sh` materializes the canonical read-only pristine fixture from the source ZIP and clones a writable per-run PM99 game root under `work/pm99/`
 - `assert_pm99_isolated_input.py` validates fixture/game-root/DBDAT inputs and hard-fails legacy `.local/premier-manager-ninety-nine` usage
 - `build_player_bitmap_review.sh` builds the full local player-photo gallery via the upstream editor script and writes outputs into `work/`
@@ -29,8 +31,11 @@ Product development wrappers:
 - `validate_staff_name_encoding.py` validates package-encoded staff identity claims (for example `Trevor Francis`) against decoded coach payloads and in-game OCR artifacts
 - `run_pm99_experiment.sh` is the primary launch wrapper for routine PM99 experiments; it hard-blocks a dirty or in-repo runner checkout by default, writes control manifests under `.local/runlogs/pm99_runner`, and dispatches by experiment name from outside the protected runner tree
 - `build_pm99_ddraw_trace_overlay.sh` builds the PM99 log-only DirectDraw proxy with the existing remote runner image and writes a source-relative overlay under `.local/runner-overlays/ddraw-trace`
-- `run_pm99_ddraw_trace_probe.sh` runs the static PM99/Stoke flow on the remote runner with the DirectDraw trace overlay, `WINEDLLOVERRIDES=ddraw=n,b`, and `PM99_DDRAW_TRACE_LOG` routed into artifacts. Its `--normalize-display-mode` option is an explicit experiment that makes the shim report `640x480x16` from `GetDisplayMode`.
+- `run_pm99_ddraw_trace_probe.sh` runs the static PM99/Stoke flow on the remote runner with the DirectDraw trace overlay, `WINEDLLOVERRIDES=ddraw=n,b`, and `PM99_DDRAW_TRACE_LOG` routed into artifacts. Its `--normalize-display-mode`, `--clamp-huge-surfaces`, `--filter-enum-modes-640`, `--inject-enum-mode-640`, and `--force-set-display-ok` flags are explicit compatibility experiments, not default behavior.
 - `summarize_pm99_ddraw_trace.py` summarizes `pm99-ddraw.log` plus runner artifacts into a compact JSON failure-stage report
+- `probe_pm99_exe_forensics.py` emits a read-only PE/byte-map/import/string/diff survey for local `MANAGPRE.EXE` variants, useful for executable forensics without copying binaries into git
+- `probe_pm99_zlib_streams.py` scans PM99 data trees for normal zlib streams and the executable's `DMZ1` raw-deflate wrapper without dumping decompressed proprietary payloads
+- `probe_simuldat_pkf_layout.py` surveys SIMULDAT `.PKF` offset tables, continuation tables, payload kinds, image dimensions, and coverage without extracting proprietary payloads
 
 Research/probe scripts:
 - `probe_*`, `profile_*`, `reconcile_*`, and targeted patch/probe helpers remain here

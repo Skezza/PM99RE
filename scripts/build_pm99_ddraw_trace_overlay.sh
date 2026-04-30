@@ -62,7 +62,7 @@ fi
 pm99_runner_require_cmd "${PM99_RUNNER_SSH_BIN}"
 pm99_runner_require_cmd "${PM99_RUNNER_RSYNC_BIN}"
 pm99_runner_select_remote_worker "${WORKER_NAME}"
-PM99_RUNNER_HOST_LOCK_CONCURRENCY="${PM99_RUNNER_WORKER_LANE_COUNT}"
+PM99_RUNNER_HOST_LOCK_CONCURRENCY="${PM99_RUNNER_HOST_LOCK_CONCURRENCY:-${PM99_RUNNER_WORKER_LANE_COUNT}}"
 
 pm99_runner_acquire_remote_host_lock "build_pm99_ddraw_trace_overlay:${RUN_TAG}"
 trap 'pm99_runner_release_remote_host_lock' EXIT

@@ -1,0 +1,73 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>PM99 In A Browser</title>
+    <link rel="stylesheet" href="./styles.css">
+  </head>
+  <body>
+    <main class="shell">
+      <aside class="side">
+        <div class="brand">
+          <h1>PM99 Browser Lab</h1>
+          <p>BoxedWine and v86 launch harness</p>
+        </div>
+
+        <section class="panel">
+          <h2>Assets</h2>
+          <div id="asset-status" class="status-list" aria-live="polite"></div>
+          <button id="refresh-assets" type="button">Refresh</button>
+        </section>
+
+        <section class="panel">
+          <h2>Backend</h2>
+          <div class="segmented" role="tablist" aria-label="Backend">
+            <button id="tab-boxedwine" class="active" type="button" role="tab" aria-selected="true">BoxedWine</button>
+            <button id="tab-v86" type="button" role="tab" aria-selected="false">v86</button>
+          </div>
+        </section>
+
+        <section class="panel">
+          <h2>Log</h2>
+          <pre id="log" class="log" aria-live="polite"></pre>
+        </section>
+      </aside>
+
+      <section class="workspace">
+        <section id="boxedwine-pane" class="backend-pane active" aria-labelledby="tab-boxedwine">
+          <div class="toolbar">
+            <label>
+              Config
+              <input id="boxedwine-config-url" type="text" value="./config/boxedwine.sample.json">
+            </label>
+            <button id="boxedwine-load" type="button">Load</button>
+            <button id="boxedwine-launch" type="button">Launch</button>
+            <button id="boxedwine-stop" type="button">Stop</button>
+          </div>
+          <div id="boxedwine-screen" class="screen boxedwine-screen">
+            <div class="screen-empty">BoxedWine output</div>
+          </div>
+        </section>
+
+        <section id="v86-pane" class="backend-pane" aria-labelledby="tab-v86">
+          <div class="toolbar">
+            <label>
+              Config
+              <input id="v86-config-url" type="text" value="./config/v86.sample.json">
+            </label>
+            <button id="v86-load" type="button">Load</button>
+            <button id="v86-launch" type="button">Launch</button>
+            <button id="v86-stop" type="button">Stop</button>
+            <button id="v86-save-state" type="button">Save State</button>
+          </div>
+          <div id="v86-screen" class="screen v86-screen">
+            <div class="screen-empty">v86 output</div>
+          </div>
+        </section>
+      </section>
+    </main>
+
+    <script type="module" src="./src/app.js"></script>
+  </body>
+</html>

@@ -1,6 +1,8 @@
-# PM99 Operations Guide
+# PM99RE Operations Guide
 
-This is the canonical operator-facing workflow for using the current PM99 editor safely.
+This is PM99RE-local orchestration guidance for research probes, runner launches,
+and handoff hygiene. Current editor, patcher, and runner product truth lives in
+the corresponding `upstream/` repositories.
 
 ## Safety Defaults
 
@@ -51,37 +53,37 @@ Examples:
 ## Standard Single-Record Workflow
 
 1. Copy the target `DBDAT/` directory to a disposable working folder.
-2. Open the GUI with `python3 -m app.gui` or use the CLI from `app/cli.py`.
+2. Open the upstream editor GUI with `./scripts/dev_editor.sh python3 -m app.gui` or use the CLI through `./scripts/dev_editor.sh`.
 3. Make one player, team, or coach edit at a time.
 4. Save changes and confirm a backup was created.
 5. Re-open the edited files and verify the change before doing more work.
 6. Prefer the parser-backed validation pass before calling the edit safe:
-   - `python3 -m app.cli validate-database --players DBDAT/JUG98030.FDI --teams DBDAT/EQ98030.FDI --coaches DBDAT/ENT98030.FDI`
+   - `./scripts/dev_editor.sh python3 -m app.cli validate-database --players DBDAT/JUG98030.FDI --teams DBDAT/EQ98030.FDI --coaches DBDAT/ENT98030.FDI`
 
 ## Bulk Player Rename Workflow
 
 1. Dry-run first:
-   - `python3 scripts/bulk_rename_players.py --data-dir DBDAT --map-output rename_map.csv --dry-run`
+   - `./scripts/dev_editor.sh python3 scripts/bulk_rename_players.py --data-dir DBDAT --map-output rename_map.csv --dry-run`
 2. Review the generated mapping CSV.
 3. Run the write:
-   - `python3 scripts/bulk_rename_players.py --data-dir DBDAT --map-output rename_map.csv`
+   - `./scripts/dev_editor.sh python3 scripts/bulk_rename_players.py --data-dir DBDAT --map-output rename_map.csv`
 4. Verify the editor and game can still load the modified files.
 
 ## Bulk Revert Workflow
 
 1. Dry-run validation first:
-   - `python3 scripts/bulk_rename_revert.py --data-dir DBDAT --map-input rename_map.csv --dry-run`
+   - `./scripts/dev_editor.sh python3 scripts/bulk_rename_revert.py --data-dir DBDAT --map-input rename_map.csv --dry-run`
 2. Run the revert:
-   - `python3 scripts/bulk_rename_revert.py --data-dir DBDAT --map-input rename_map.csv`
+   - `./scripts/dev_editor.sh python3 scripts/bulk_rename_revert.py --data-dir DBDAT --map-input rename_map.csv`
 3. Re-open the files and confirm the original names are restored.
 
 ## Parser-Backed Roster Inspection
 
 Use the read-first roster tools before trusting any team-level data mutation:
 
-- `python3 -m app.cli team-roster-linked --team "Stoke C"`
-- `python3 -m app.cli team-roster-extract --team "Stoke C"`
-- `python3 -m app.cli team-roster-extract --include-fallbacks --team "Manchester Utd"`
+- `./scripts/dev_editor.sh python3 -m app.cli team-roster-linked --team "Stoke C"`
+- `./scripts/dev_editor.sh python3 -m app.cli team-roster-extract --team "Stoke C"`
+- `./scripts/dev_editor.sh python3 -m app.cli team-roster-extract --include-fallbacks --team "Manchester Utd"`
 
 Guideline:
 - Default authoritative output is for editor-facing work.

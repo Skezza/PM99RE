@@ -1,0 +1,140 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>PM99 BoxedWine</title>
+    <style>
+      :root {
+        color-scheme: light dark;
+        font-family: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+        background: #f4f5f2;
+        color: #20231f;
+      }
+
+      body {
+        margin: 0;
+      }
+
+      main {
+        min-height: 100vh;
+        display: grid;
+        grid-template-rows: auto 1fr;
+      }
+
+      header {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        padding: 12px 16px;
+        border-bottom: 1px solid #cfd3c8;
+        background: #ffffff;
+      }
+
+      h1 {
+        margin: 0;
+        font-size: 16px;
+        font-weight: 650;
+      }
+
+      button {
+        min-height: 34px;
+        padding: 0 14px;
+        border: 1px solid #5b6655;
+        border-radius: 6px;
+        background: #254f8f;
+        color: #ffffff;
+        font: inherit;
+        cursor: pointer;
+      }
+
+      button:disabled {
+        cursor: default;
+        opacity: 0.55;
+      }
+
+      #status {
+        min-width: 0;
+        flex: 1;
+        overflow: hidden;
+        color: #52604b;
+        font-size: 13px;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+      }
+
+      #boxedwine-mount {
+        min-height: 0;
+        display: grid;
+        place-items: center;
+        padding: 16px;
+        background: #20231f;
+      }
+
+      iframe {
+        width: min(100%, 800px);
+        height: min(75vh, 600px);
+        border: 1px solid #6f7669;
+        background: #000000;
+      }
+
+      @media (prefers-color-scheme: dark) {
+        :root {
+          background: #151813;
+          color: #eceee8;
+        }
+
+        header {
+          border-color: #384034;
+          background: #1d211a;
+        }
+
+        #status {
+          color: #aeb8a5;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <main>
+      <header>
+        <h1>PM99 BoxedWine</h1>
+        <button id="launch" type="button" disabled>Launch</button>
+        <div id="status" role="status">Loading config</div>
+      </header>
+      <div id="boxedwine-mount"></div>
+    </main>
+
+    <script type="module">
+      import {
+        DEFAULT_CONFIG_PATH,
+        loadBoxedWineConfig,
+        mountBoxedWine
+      } from "./static/boxedwine-launcher.js";
+
+      const launchButton = document.querySelector("#launch");
+      const status = document.querySelector("#status");
+      const pageUrl = new URL(window.location.href);
+      const configUrl = pageUrl.searchParams.get("config") || DEFAULT_CONFIG_PATH;
+      let config = null;
+
+      try {
+        config = await loadBoxedWineConfig(configUrl);
+        status.textContent = `Config: ${configUrl}`;
+        launchButton.disabled = false;
+      } catch (error) {
+        status.textContent = error.message;
+      }
+
+      launchButton.addEventListener("click", () => {
+        launchButton.disabled = true;
+        const mounted = mountBoxedWine("#boxedwine-mount", config);
+        status.textContent = mounted.url;
+      });
+
+      if (config && pageUrl.searchParams.get("launch") === "1") {
+        launchButton.click();
+      }
+    </script>
+  </body>
+</html>

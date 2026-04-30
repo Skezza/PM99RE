@@ -1,13 +1,14 @@
 ﻿#!/usr/bin/env python3
-"""Smoke tests for PKF viewer and PKF string searcher (non-GUI)"""
-# Ensure project root is importable when script is executed from the scripts/ directory
-import os, sys
-_project_root = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
-if _project_root not in sys.path:
-    sys.path.insert(0, _project_root)
+"""Smoke tests for upstream PKF parser/searcher helpers (non-GUI)."""
+import os
 import sys
 import traceback
 from pathlib import Path
+
+_project_root = Path(__file__).resolve().parents[1]
+_editor_root = Path(os.environ.get("PM99_EDITOR_ROOT", _project_root / "upstream" / "pm99-skezmod-db-editor")).resolve()
+if str(_editor_root) not in sys.path:
+    sys.path.insert(0, str(_editor_root))
 
 try:
     from app.pkf import PKFFile, PKFDecoderError
@@ -37,16 +38,19 @@ def format_hex_preview(data: bytes, width: int = 16, start_offset: int = 0, max_
 
 def find_pkf_candidates():
     candidates = []
-    for base in (Path("app/DBDAT"), Path("DBDAT"), Path(".")):
+    for base in (
+        Path(os.environ["PM99_PKF_ROOT"]) if os.environ.get("PM99_PKF_ROOT") else None,
+        _project_root / "DBDAT",
+        _project_root / ".local",
+        _project_root / "work" / "fixtures",
+    ):
+        if base is None:
+            continue
         if not base.exists():
             continue
         for ext in ("*.PKF", "*.pkf"):
-            for p in sorted(base.glob(ext)):
+            for p in sorted(base.rglob(ext)):
                 candidates.append(p)
-    # fallback: search workspace recursively for any *.pkf
-    if not candidates:
-        for p in Path(".").rglob("*.pkf"):
-            candidates.append(p)
     return candidates
 
 

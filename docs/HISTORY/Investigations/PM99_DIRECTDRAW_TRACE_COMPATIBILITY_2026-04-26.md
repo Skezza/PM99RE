@@ -34,6 +34,19 @@ The proxy wraps:
 PM99 immediately queries `IDirectDraw4`, so wrapping `IDirectDraw` alone is not
 enough.
 
+The proxy now also has opt-in compatibility experiments:
+
+- `PM99_DDRAW_NORMALIZE_DISPLAY_MODE=1`: report `640x480x16` from
+  `GetDisplayMode`.
+- `PM99_DDRAW_FILTER_ENUM_MODES_640=1`: hide non-`640x480x16`
+  `EnumDisplayModes` callbacks from PM99.
+- `PM99_DDRAW_INJECT_ENUM_MODE_640=1`: if no `640x480x16` enum mode reached
+  PM99, synthesize one callback.
+- `PM99_DDRAW_FORCE_SET_DISPLAY_MODE_OK=1`: if the real
+  `SetDisplayMode(640,480,16)` fails, return `DD_OK` to PM99.
+
+Those switches are off by default in the research proxy.
+
 ## Runner Evidence
 
 ### 640x480 Shim Safety Run
@@ -114,11 +127,111 @@ IDirectDraw4::GetAvailableVidMem -> ok
 Conclusion: PM99 rejects the larger current desktop/mode before its real
 fullscreen mode switch.
 
+### Failed Single-Factor Shim Attempts
+
+These were tested and should not be promoted as fixes:
+
+- `pm99_ddraw_norm_fullscreen_1024_20260426`: normalizing only
+  `GetDisplayMode` to `640x480x16` still failed with `Application cannot start`.
+- `pm99_ddraw_norm_windowed_1024_20260426`: normalizing only
+  `GetDisplayMode` still produced the bogus wrapped `-44 x -44` surface sizes.
+- `pm99_ddraw_clamp_windowed_1024_20260426`: clamping those impossible
+  surfaces to `640x480` still failed with the startup modal.
+
+Those failures matter because they prove the fix has to address the earlier
+mode enumeration table, not just one later value or one bad surface request.
+
+### EnumDisplayModes Finding
+
+The callback trace changed the diagnosis.
+
+At `640x480x16`, Wine enumerates only the current `640x480` modes:
+
+```text
+run tag: pm99_ddraw_enumtrace_safety_640_20260426
+result:  container exit 0
+modes:   640x480x32, 640x480x16, 640x480x8
+```
+
+At `1024x768x16`, Wine enumerates only the current `1024x768` modes:
+
+```text
+run tag: pm99_ddraw_enumtrace_fullscreen_1024_20260426
+result:  container exit 1
+modal:   Application cannot start.
+modes:   1024x768x32, 1024x768x16, 1024x768x8
+```
+
+So PM99 is not being offered its expected `640x480x16` startup mode on larger
+desktops. A simple "filter to 640" is therefore insufficient because it passes
+zero modes. The shim has to synthesize a `640x480x16` mode as well.
+
+### Synthetic 640 Mode Without Forced SetDisplayMode
+
+This run hid the real `1024x768` enum modes, injected one synthetic
+`640x480x16` mode, and normalized `GetDisplayMode` to `640x480x16`.
+
+```text
+run tag: pm99_ddraw_synth640_fullscreen_1024_20260426
+result:  container exit 1
+modal:   Application cannot start.
+```
+
+That got PM99 further than the original failure. It reached the normal
+fullscreen transition and called:
+
+```text
+IDirectDraw4::SetDisplayMode width=640 height=480 bpp=16
+hr=0x80004001 fail
+```
+
+`0x80004001` is `E_NOTIMPL`. On the 1024 runner desktop, Wine did not actually
+support switching that DirectDraw display mode, even though PM99 had now chosen
+the right internal mode.
+
+### Successful Larger-Desktop Compatibility Shim
+
+This run used the full compatibility set:
+
+- hide real non-640 enum modes
+- inject `640x480x16`
+- normalize `GetDisplayMode`
+- return success to PM99 for failed `SetDisplayMode(640,480,16)`
+
+```text
+run tag: pm99_ddraw_synth640_forceset_fullscreen_1024_20260426
+result:  container exit 0
+modal:   none
+flow:    30 scripted steps, through squad/dashboard screens
+window:  640x480 on a 1024x768 desktop
+trace:   23423 DirectDraw events
+```
+
+The same shim also passed on a 1080p desktop:
+
+```text
+run tag: pm99_ddraw_synth640_forceset_fullscreen_1080p_20260426
+screen:  1920x1080x16
+result:  container exit 0
+modal:   none
+flow:    30 scripted steps
+window:  640x480 on a 1920x1080 desktop
+trace:   18931 DirectDraw events
+```
+
+Important caveat: this is not a higher-resolution renderer. PM99 still creates
+and uses a `640x480` game window. The fix is that the game now starts and plays
+on a larger host desktop instead of rejecting startup.
+
 ## Interpretation
 
-This changes the compatibility target. The immediate problem is not Wine
-returning a bad DirectDraw HRESULT. PM99 is seeing a larger current display
-mode, doing its own validation/geometry work, and deciding startup is invalid.
+This changes the compatibility target. The immediate problem is not a random
+DirectDraw failure. PM99 is seeing only the host desktop's larger modes during
+startup, not its expected `640x480x16` mode. If the shim makes PM99 see the
+same `640x480x16` startup facts it sees on the passing 640 runner, PM99 gets
+far enough to attempt the normal mode switch. On larger Wine/Xvfb desktops,
+that real mode switch returns `E_NOTIMPL`, so the shim also has to treat that
+specific failed mode switch as non-fatal.
 
 The two 1024x768 failures differ:
 
@@ -127,21 +240,24 @@ The two 1024x768 failures differ:
 - Windowed mode gets further and creates bogus `-44 x -44` wrapped surfaces,
   then fails with the same PM99 modal.
 
-That explains why blind branch bypasses and forced-success patches produced
-black/invalid renderer state: the underlying PM99 state is already wrong.
+That explains why the earlier blind branch bypasses and forced-success patches
+produced black/invalid renderer state: the underlying PM99 mode table was
+already wrong. The working path fixes the mode table first, then bypasses only
+the final unsupported host mode switch.
 
 ## Next High-Value Work
 
-The next patch should not spoof success blindly. The useful next targets are:
+The next patch should be a packaged compatibility shim, not a binary branch
+bypass:
 
-- Instrument PM99's own validation returns around `0x00676250`, `0x00676770`,
-  `0x00676C00`, and helper calls near the mode-table/device validation path.
-- Test whether a shim can safely normalize the startup `GetDisplayMode` result
-  to PM99's expected `640x480x16` before PM99's validation runs.
-- Investigate the `SCREEN POSITION: 44, 44` interaction with the wrapped
-  `4294967252 x 4294967252` surface request in windowed mode.
-- Only after that, try a targeted fix: either clamp/normalize the bad geometry
-  or patch the exact PM99 validation branch that rejects a harmless larger
-  desktop.
+- Build a release-style `ddraw.dll` where the four successful compatibility
+  behaviors can be enabled by an INI file or a clearly named build profile.
+- Keep the default trace-only behavior for research builds.
+- Test on real Windows 10/11 and Wine outside Xvfb. The runner proves the
+  startup logic and scripted flow, but it does not prove every real GPU/driver
+  combination.
+- If visual scaling is still desired, add it outside this fix. This shim makes
+  PM99 work on a larger desktop; it does not upscale or re-render the game at
+  1080p.
 
 Do not revive the rejected forced-windowed patch as-is.

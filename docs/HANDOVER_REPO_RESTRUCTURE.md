@@ -1,5 +1,10 @@
 # PM99RE Restructure Handover (2026-03-09)
 
+Historical snapshot: this handover records the March 2026 split state. The
+current PM99RE layout also includes `upstream/pm99-runner` and a tracked
+`tools/` area for standalone research/viewer tools. Treat this file as
+provenance, not current operating authority.
+
 ## Objective
 Complete the repo split so PM99RE is research/integration only, with product code developed in upstream submodules.
 

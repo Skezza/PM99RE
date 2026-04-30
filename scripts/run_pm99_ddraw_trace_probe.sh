@@ -22,6 +22,10 @@ SCREEN_GEOMETRY="${PM99_RUNNER_SCREEN_GEOMETRY:-640x480x16}"
 DOCKER_TIMEOUT_SECONDS="${PM99_RUNNER_DOCKER_TIMEOUT_SECONDS:-900}"
 WINE_DEBUG="${WINEDEBUG:--all}"
 NORMALIZE_DISPLAY_MODE=0
+CLAMP_HUGE_SURFACES=0
+FILTER_ENUM_MODES_640=0
+INJECT_ENUM_MODE_640=0
+FORCE_SET_DISPLAY_MODE_OK=0
 KEEP_REMOTE=0
 
 STATIC_SQUAD_STEPS=(
@@ -73,6 +77,10 @@ Options:
   --screen-geometry <geom>  Xvfb geometry (default: PM99_RUNNER_SCREEN_GEOMETRY or 640x480x16)
   --wine-debug <channels>   WINEDEBUG value (default: -all)
   --normalize-display-mode  Make shim report 640x480x16 from GetDisplayMode
+  --clamp-huge-surfaces     Clamp impossible CreateSurface sizes to 640x480
+  --filter-enum-modes-640   Only pass 640x480x16 EnumDisplayModes results to PM99
+  --inject-enum-mode-640    Synthesize a 640x480x16 EnumDisplayModes result if none passed
+  --force-set-display-ok    Return DD_OK to PM99 for failed 640x480x16 SetDisplayMode
   --docker-timeout <sec>    Hard timeout for the container (default: 900)
   --keep-remote             Do not clean remote run/artifacts after success
   -h, --help                Show this help
@@ -88,6 +96,10 @@ while [[ $# -gt 0 ]]; do
     --screen-geometry) SCREEN_GEOMETRY="$2"; shift 2 ;;
     --wine-debug) WINE_DEBUG="$2"; shift 2 ;;
     --normalize-display-mode) NORMALIZE_DISPLAY_MODE=1; shift ;;
+    --clamp-huge-surfaces) CLAMP_HUGE_SURFACES=1; shift ;;
+    --filter-enum-modes-640) FILTER_ENUM_MODES_640=1; shift ;;
+    --inject-enum-mode-640) INJECT_ENUM_MODE_640=1; shift ;;
+    --force-set-display-ok) FORCE_SET_DISPLAY_MODE_OK=1; shift ;;
     --docker-timeout) DOCKER_TIMEOUT_SECONDS="$2"; shift 2 ;;
     --keep-remote) KEEP_REMOTE=1; shift ;;
     -h|--help) usage; exit 0 ;;
@@ -108,7 +120,7 @@ pm99_runner_require_cmd "${PM99_RUNNER_SSH_BIN}"
 pm99_runner_require_cmd "${PM99_RUNNER_RSYNC_BIN}"
 pm99_runner_require_editor_root
 pm99_runner_select_remote_worker "${WORKER_NAME}"
-PM99_RUNNER_HOST_LOCK_CONCURRENCY="${PM99_RUNNER_WORKER_LANE_COUNT}"
+PM99_RUNNER_HOST_LOCK_CONCURRENCY="${PM99_RUNNER_HOST_LOCK_CONCURRENCY:-${PM99_RUNNER_WORKER_LANE_COUNT}}"
 
 pm99_runner_acquire_remote_host_lock "run_pm99_ddraw_trace_probe:${RUN_TAG}"
 trap 'pm99_runner_release_remote_host_lock' EXIT
@@ -150,6 +162,10 @@ pm99_runner_remote_one_shot_container_with_timeout \
   --env PM99_SCREEN_GEOMETRY="${SCREEN_GEOMETRY}" \
   --env PM99_DDRAW_TRACE_LOG=/workspace/artifacts/pm99-ddraw.log \
   --env PM99_DDRAW_NORMALIZE_DISPLAY_MODE="${NORMALIZE_DISPLAY_MODE}" \
+  --env PM99_DDRAW_CLAMP_HUGE_SURFACES="${CLAMP_HUGE_SURFACES}" \
+  --env PM99_DDRAW_FILTER_ENUM_MODES_640="${FILTER_ENUM_MODES_640}" \
+  --env PM99_DDRAW_INJECT_ENUM_MODE_640="${INJECT_ENUM_MODE_640}" \
+  --env PM99_DDRAW_FORCE_SET_DISPLAY_MODE_OK="${FORCE_SET_DISPLAY_MODE_OK}" \
   --env WINEDLLOVERRIDES=ddraw=n,b \
   --env WINEDEBUG="${WINE_DEBUG}" \
   --env PYTHONPATH=/workspace/home:/workspace/repo:/workspace/editor \

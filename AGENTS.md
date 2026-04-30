@@ -5,15 +5,19 @@ PM99RE is a research/integration workspace, not the product-code home.
 
 - `upstream/pm99-skezmod-db-editor/`: canonical editor implementation (`app/`, `tests/`, `docs/`).
 - `upstream/pm99-skezmod-patcher/`: canonical patch tooling.
+- `upstream/pm99-runner/`: canonical runtime/remote runner automation.
+- `tools/`: standalone PM99RE research/viewer tools; do not put product editor/patcher implementations here.
 - `scripts/`: PM99RE orchestration and research probes (`dev_editor.sh`, `dev_patcher.sh`, `check_repo_boundary.py`, `probe_*`).
 - `docs/`: PM99RE research context and handover notes; product truth lives in upstream docs.
 - `DBDAT/` and `.local/`: local-only game/workspace data.
 
-Boundary rule: PM99RE must not track product paths (`app/`, `tests/`, `pm99_database_editor.py`, `pytest.ini`) at the root.
+Boundary rule: PM99RE must not track product paths (`app/`, `tests/`, `pm99_database_editor.py`, `pytest.ini`) at the root, local artifact roots, or proprietary PM99 binaries.
 
 ## Build, Test, and Development Commands
 - `python3 scripts/check_repo_boundary.py`: enforce PM99RE research-only boundary (also run in CI/pre-commit).
-- `git submodule status`: verify editor/patcher pointers before and after changes.
+- `python3 scripts/check_repo_boundary.py --check-local`: additionally flag ignored root `app/` or `tests/` leftovers during local cleanup.
+- `python3 scripts/check_repo_state.py`: verify root and submodule cleanliness before reproducible handoff.
+- `git submodule status --recursive`: verify upstream pointers before and after changes.
 - `./scripts/dev_editor.sh`: enter editor workflow (no args shows `app.cli` help).
 - `./scripts/dev_editor.sh pytest -m deterministic -q`: run blocking upstream test lane.
 - `./scripts/dev_editor.sh pytest -q`: run full upstream test suite.

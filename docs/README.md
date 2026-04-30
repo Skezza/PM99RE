@@ -24,10 +24,19 @@ Use these for current product truth:
 - [../upstream/pm99-skezmod-db-editor/docs/DEVELOPER_GUIDE.md](../upstream/pm99-skezmod-db-editor/docs/DEVELOPER_GUIDE.md)
 - [../upstream/pm99-skezmod-db-editor/docs/PKF_STRING_SEARCHER.md](../upstream/pm99-skezmod-db-editor/docs/PKF_STRING_SEARCHER.md)
 
+Runner product truth lives in:
+- [../upstream/pm99-runner/README.md](../upstream/pm99-runner/README.md)
+- [../upstream/pm99-runner/scripts/pm99_runner/README.md](../upstream/pm99-runner/scripts/pm99_runner/README.md)
+
 ## PM99RE Local Docs
 
 Local files in this directory are research context, snapshots, and archive material.
 If they diverge from upstream product docs, treat upstream as authoritative.
+
+Local PM99RE operations and repository-shape notes:
+- [OPERATIONS.md](OPERATIONS.md)
+- [HANDOVER_REPO_RESTRUCTURE.md](HANDOVER_REPO_RESTRUCTURE.md) (historical snapshot)
+- [HISTORY/Investigations/PM99_REPO_FORENSIC_CLEANUP_2026-04-30.md](HISTORY/Investigations/PM99_REPO_FORENSIC_CLEANUP_2026-04-30.md)
 
 Current handover notes for upstream implementation planning:
 - [HANDOVER_FINE_POSITIONS_2026-04-08.md](HANDOVER_FINE_POSITIONS_2026-04-08.md)
@@ -56,3 +65,4 @@ These are retained as archive artifacts and raw evidence, not maintained explana
 If documentation conflicts with implementation, prefer:
 - editor code in [../upstream/pm99-skezmod-db-editor/](../upstream/pm99-skezmod-db-editor/)
 - patcher code in [../upstream/pm99-skezmod-patcher/](../upstream/pm99-skezmod-patcher/)
+- runner code in [../upstream/pm99-runner/](../upstream/pm99-runner/)

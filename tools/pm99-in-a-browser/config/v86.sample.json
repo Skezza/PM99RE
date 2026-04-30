@@ -1,0 +1,24 @@
+{
+  "backend": "v86",
+  "libv86Url": "./vendor/v86/libv86.js",
+  "wasmPath": "./vendor/v86/v86.wasm",
+  "memorySizeMb": 128,
+  "vgaMemorySizeMb": 8,
+  "autostart": true,
+  "biosUrl": "./v86/assets/bios/seabios.bin",
+  "vgaBiosUrl": "./v86/assets/bios/vgabios.bin",
+  "hda": {
+    "url": "./v86/assets/disks/windows98-pm99.img",
+    "async": true,
+    "size": 2147483648
+  },
+  "cdrom": {
+    "url": "./assets/pm99.iso",
+    "async": true
+  },
+  "bootOrder": 291,
+  "notes": [
+    "Copy this file to v86.local.json and point hda.url at a local Windows 98/2000 image.",
+    "The PM99 ISO can be generated from the local fixture by prepare_pm99_assets.sh if genisoimage, mkisofs, or xorriso is installed."
+  ]
+}

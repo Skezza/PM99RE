@@ -5,6 +5,10 @@ __pycache__/
 *.pyd
 *.env
 venv/
+
+# JavaScript/web tooling
+node_modules/
+dist/
 *.log
 
 # IDE
@@ -19,6 +23,14 @@ PROMPT.md
 .local/
 DBDAT/*
 !DBDAT/.gitkeep
+work/
+worktrees/
+artifacts/
+docs/artifacts/
+tbc/
+FDI-PKF/
+upstream/pm99-runner-isolated/
+/pm99-in-a-browser/
 
 # Prevent accidental commit of proprietary PM99 binaries.
 *.EXE
@@ -27,10 +39,16 @@ DBDAT/*
 *.fdi
 *.PKF
 *.pkf
+*.DLL
+*.dll
 
 # Data
 *.FDI.backup
 *.FDI.bak
+*.FDI.*
+*.fdi.*
+*.PKF.*
+*.pkf.*
 
 # Output
 out/
