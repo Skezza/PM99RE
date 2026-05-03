@@ -29,7 +29,6 @@ artifacts/
 docs/artifacts/
 tbc/
 FDI-PKF/
-upstream/pm99-runner-isolated/
 /pm99-in-a-browser/
 
 # Prevent accidental commit of proprietary PM99 binaries.

@@ -1,4 +1,4 @@
-import type { PkfListItem, PkfRecord } from './types';
+import type { PkfDetail, PkfListItem, PkfRecord } from './types';
 
 export interface PkfFilters {
   query: string;
@@ -33,6 +33,24 @@ export function matchesPkfFilters(item: PkfListItem, filters: PkfFilters): boole
     return false;
   }
   return true;
+}
+
+export function matchesRecordFilters(record: PkfRecord, filters: PkfFilters): boolean {
+  if (filters.kind && record.payload.kind !== filters.kind) {
+    return false;
+  }
+  if (filters.dimension && recordDimension(record) !== filters.dimension) {
+    return false;
+  }
+  if (filters.p3dFamily && record.payload.p3d_family !== filters.p3dFamily) {
+    return false;
+  }
+  return true;
+}
+
+export function firstRecordMatchingFilters(detail: PkfDetail, filters: PkfFilters): PkfRecord | null {
+  const records = detail.tables.flatMap((table) => table.records);
+  return records.find((record) => matchesRecordFilters(record, filters)) ?? records[0] ?? null;
 }
 
 export function allKinds(items: PkfListItem[]): string[] {

@@ -2,12 +2,16 @@
 
 This file is the only documentation index. Use it as the first stop.
 
-## Project Contract
+## Current Authority
 
-These root-level docs define the project’s goals, constraints, and engineering expectations:
-- [../codex.md](../codex.md)
-- [../project_plan.md](../project_plan.md)
-- [../technical_considerations.md](../technical_considerations.md)
+PM99RE is a research/integration workspace. Current repository-shape and agent
+rules live in:
+- [../AGENTS.md](../AGENTS.md)
+- [../README.md](../README.md)
+- [OPERATIONS.md](OPERATIONS.md)
+
+Product truth lives in the upstream submodules listed below. Historical PM99RE
+notes remain useful for provenance, but they are not implementation authority.
 
 ## Canonical Product Docs (Upstream)
 
@@ -47,6 +51,12 @@ Current handover notes for upstream implementation planning:
 
 These are useful for provenance and background, but they are not authoritative:
 - [HISTORY/README.md](HISTORY/README.md)
+- Recent retained investigations:
+  [HISTORY/Investigations/ENGLISH80_MODERN_REPLACEMENT_PLAN_2026-05-01.md](HISTORY/Investigations/ENGLISH80_MODERN_REPLACEMENT_PLAN_2026-05-01.md),
+  [HISTORY/Investigations/VARIABLE_LENGTH_PLAYER_NAME_CONTRACTS_2026-05-01.md](HISTORY/Investigations/VARIABLE_LENGTH_PLAYER_NAME_CONTRACTS_2026-05-01.md),
+  [HISTORY/Investigations/VARIABLE_NAME_CLEANBASE_RUNTIME_MATRIX_2026-05-02.md](HISTORY/Investigations/VARIABLE_NAME_CLEANBASE_RUNTIME_MATRIX_2026-05-02.md),
+  [HISTORY/Investigations/FULL_GAME_VARIABLE_NAME_WINDOWS_2026-05-03.md](HISTORY/Investigations/FULL_GAME_VARIABLE_NAME_WINDOWS_2026-05-03.md),
+  [HISTORY/Investigations/STOKE_VARIABLE_NAME_LENGTH_BOUNDARIES_2026-05-03.md](HISTORY/Investigations/STOKE_VARIABLE_NAME_LENGTH_BOUNDARIES_2026-05-03.md)
 - Notable retained investigations:
   [HISTORY/Investigations/PLAYER_BITMAP_ARCHIVES.md](HISTORY/Investigations/PLAYER_BITMAP_ARCHIVES.md),
   [HISTORY/Investigations/PLAYER_BITMAP_COVERAGE_AUDIT.md](HISTORY/Investigations/PLAYER_BITMAP_COVERAGE_AUDIT.md),

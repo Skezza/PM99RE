@@ -268,6 +268,8 @@ while IFS=$'\t' read -r -u 3 CLUB_KEY SET_NAME TEAM_QUERY TEAM_SELECT_X TEAM_SEL
     --shm-size 2g \
     --env HOME=/workspace/home \
     --env PM99_EDITOR_ROOT=/workspace/editor \
+    --env PM99_RUNNER_FAST_OCR="${PM99_RUNNER_FAST_OCR:-}" \
+    --env PM99_RUNNER_SKIP_CLASSIFICATION="${PM99_RUNNER_SKIP_CLASSIFICATION:-}" \
     --env PYTHONPATH=/workspace/repo:/workspace/editor \
     --env WINEPREFIX=/workspace/wine-prefix \
     --volume "${PM99_RUNNER_REMOTE_REPO_DIR}:/workspace/repo" \

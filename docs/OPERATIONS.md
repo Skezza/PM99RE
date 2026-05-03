@@ -13,6 +13,15 @@ the corresponding `upstream/` repositories.
   only use `--skip-validate` for investigative workflows.
 - Never commit `.FDI`, `.backup*`, generated CSVs, or ad hoc exports.
 
+## Worktree Placement
+
+- Keep `upstream/` limited to declared submodules from `.gitmodules`.
+- Put alternate checkouts and worker branches under ignored `worktrees/`.
+- Use `git worktree move` when relocating an existing linked worktree so Git
+  metadata stays consistent.
+- Run `python3 scripts/check_repo_boundary.py --check-local` before handoff to
+  catch misplaced root product directories or undeclared `upstream/` checkouts.
+
 ## PM99 Runner Host Coordination
 
 When using `pm99-runner` against the shared remote host, assume the host is now

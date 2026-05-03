@@ -13,6 +13,7 @@ PROFILE_COUNT=20
 ROW_X=40
 ROW_START_Y=127
 ROW_PITCH=15
+SQUAD_ENABLE_STATUS_FILTERS=0
 OVERRIDE_ENT=0
 EXE_OVERRIDE=""
 LATE_DBDAT_DIR=""
@@ -41,6 +42,8 @@ Options:
   --row-x <pixels>            Squad row click X coordinate (default: 40)
   --row-start-y <pixels>      Squad row 1 click Y coordinate (default: 127)
   --row-pitch <pixels>        Squad row vertical spacing (default: 15)
+  --squad-enable-status-filters
+                              Tick squad status filters before squad/profile proof
   --override-ent              Also override ENT98030.FDI from --dbdat-dir
   --exe-override <path>       Optional MANAGPRE.EXE override to copy into the run
   --allow-legacy-late-injection
@@ -68,6 +71,7 @@ while [[ $# -gt 0 ]]; do
     --row-x) ROW_X="$2"; shift 2 ;;
     --row-start-y) ROW_START_Y="$2"; shift 2 ;;
     --row-pitch) ROW_PITCH="$2"; shift 2 ;;
+    --squad-enable-status-filters) SQUAD_ENABLE_STATUS_FILTERS=1; shift ;;
     --override-ent) OVERRIDE_ENT=1; shift ;;
     --exe-override) EXE_OVERRIDE="$2"; shift 2 ;;
     --allow-legacy-late-injection) ALLOW_LEGACY_LATE_INJECTION=1; shift ;;
@@ -224,6 +228,10 @@ fi
 
 DOCKER_LATE_MOUNT_ARGS=()
 DRIVER_LATE_ARGS=""
+DRIVER_SQUAD_FILTER_ARGS=()
+if [[ ${SQUAD_ENABLE_STATUS_FILTERS} -eq 1 ]]; then
+  DRIVER_SQUAD_FILTER_ARGS=(--squad-enable-status-filters)
+fi
 if [[ -n "${LATE_DBDAT_DIR}" ]]; then
   DOCKER_LATE_MOUNT_ARGS=(--volume "${REMOTE_LATE_DBDAT_DIR}:/workspace/late_dbdat")
   DRIVER_LATE_ARGS="--late-dbdat-override-dir /workspace/late_dbdat --late-dbdat-files $(printf '%q' "${LATE_DBDAT_FILES}")"
@@ -258,6 +266,7 @@ pm99_runner_remote_one_shot_container_with_timeout \
     --row-x "${ROW_X}" \
     --row-start-y "${ROW_START_Y}" \
     --row-pitch "${ROW_PITCH}" \
+    "${DRIVER_SQUAD_FILTER_ARGS[@]}" \
     ${DRIVER_LATE_ARGS}
 RUN_STATUS=$?
 set -e

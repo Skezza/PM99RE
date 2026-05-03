@@ -1,7 +1,16 @@
 import { useEffect, useMemo, useState } from 'react';
-import { fetchPalette, fetchPkf, fetchPkfs, fetchSummary, previewUrl } from './api';
-import { allDimensions, allKinds, allP3DFamilies, matchesPkfFilters, recordDimension } from './filtering';
+import { fetchMenuAtlas, fetchPalette, fetchPkf, fetchPkfs, fetchSummary, previewUrl } from './api';
+import {
+  allDimensions,
+  allKinds,
+  allP3DFamilies,
+  firstRecordMatchingFilters,
+  matchesPkfFilters,
+  matchesRecordFilters,
+  recordDimension,
+} from './filtering';
 import type { PaletteColor, PkfDetail, PkfListItem, PkfRecord, Summary } from './types';
+import type { MenuAsset, MenuAtlas } from './types';
 
 function formatBytes(value: number): string {
   if (value >= 1024 * 1024) {
@@ -279,12 +288,188 @@ function DetailPanel({
   );
 }
 
+function assetGroupId(path: string): string {
+  return `asset-group-${path.toLowerCase().replace(/[^a-z0-9]+/g, '-')}`;
+}
+
+function assetDimension(asset: MenuAsset): string {
+  if (asset.width === null || asset.height === null) {
+    return asset.kind;
+  }
+  return asset.bpp === null
+    ? `${asset.width}x${asset.height}`
+    : `${asset.width}x${asset.height}x${asset.bpp}`;
+}
+
+function isLowInformationAsset(asset: MenuAsset): boolean {
+  return asset.visual_quality === 'low-information';
+}
+
+function assetQualityLabel(asset: MenuAsset): string {
+  if (asset.visual_quality === 'low-information') {
+    return 'Mask / blank-like';
+  }
+  if (asset.visual_quality === 'dark-control') {
+    return 'Dark control';
+  }
+  if (asset.visual_quality === 'unknown') {
+    return 'Unscored image';
+  }
+  return 'Visible artwork';
+}
+
+function assetStats(asset: MenuAsset): string | null {
+  if (
+    asset.mean_luminance === null
+    || asset.near_black_ratio === null
+    || asset.unique_color_count === null
+  ) {
+    return null;
+  }
+  return `luma ${asset.mean_luminance.toFixed(1)} · black ${(asset.near_black_ratio * 100).toFixed(1)}% · ${asset.unique_color_count} colors`;
+}
+
+function MenuAssetCard({
+  asset,
+  onOpen,
+}: {
+  asset: MenuAsset;
+  onOpen: (asset: MenuAsset) => void;
+}) {
+  const stats = assetStats(asset);
+  return (
+    <button className={`atlas-card ${asset.visual_quality}`} onClick={() => onOpen(asset)}>
+      <div className={asset.width === 640 && asset.height === 480 ? 'atlas-preview atlas-preview-wide' : 'atlas-preview'}>
+        <img
+          alt={`${asset.pkf_path} table ${asset.table_index} slot ${asset.slot_index}`}
+          src={previewUrl(asset.pkf_id, asset.table_index, asset.slot_index)}
+          loading="lazy"
+        />
+      </div>
+      <strong>{asset.label}</strong>
+      <span className={`asset-quality ${asset.visual_quality}`}>{assetQualityLabel(asset)}</span>
+      <span>{asset.role}</span>
+      <code>{asset.pkf_path}</code>
+      <code>table {asset.table_index}, slot {asset.slot_index} · {asset.payload_offset_hex}</code>
+      <code>{assetDimension(asset)} · {asset.length_hex} · {asset.sha256_16}</code>
+      {asset.palette_source && <code>palette: {asset.palette_source}</code>}
+      {stats && <code>{stats}</code>}
+      <span className="asset-open-hint">Open exact record</span>
+    </button>
+  );
+}
+
+function MenuAtlasView({
+  atlas,
+  onOpenAsset,
+}: {
+  atlas: MenuAtlas | null;
+  onOpenAsset: (asset: MenuAsset) => void;
+}) {
+  const [showLowInformation, setShowLowInformation] = useState(false);
+
+  if (!atlas) {
+    return <div className="empty-state">Loading menu atlas...</div>;
+  }
+
+  const lowInformationCount = atlas.asset_groups.reduce(
+    (total, group) => total + group.records.filter(isLowInformationAsset).length,
+    0,
+  );
+  const displayedAssetCount = showLowInformation
+    ? atlas.asset_count
+    : atlas.asset_count - lowInformationCount;
+
+  return (
+    <section className="menu-atlas">
+      <header className="atlas-header">
+        <div>
+          <p className="eyebrow">Runtime Discovery</p>
+          <h2>PM99 Menu Assets</h2>
+          <p>
+            These are the source bitmap/GIF records from the UI PKFs. No runner screenshots are shown here:
+            each card is an asset candidate you can inspect and target for replacement work. Blank-like masks
+            and near-black state images are hidden by default so actual editable artwork is easier to find.
+          </p>
+          <div className="atlas-controls">
+            <button
+              type="button"
+              onClick={() => setShowLowInformation((value) => !value)}
+            >
+              {showLowInformation ? 'Hide mask / blank-like records' : `Show ${lowInformationCount} mask / blank-like records`}
+            </button>
+          </div>
+        </div>
+        <div className="atlas-metrics">
+          <span>{displayedAssetCount} shown assets</span>
+          <span>{lowInformationCount} mask-like hidden</span>
+          <span>{atlas.asset_groups.filter((group) => !group.missing).length} source PKFs</span>
+        </div>
+      </header>
+
+      <nav className="asset-index" aria-label="Menu asset groups">
+        {atlas.asset_groups.map((group) => {
+          const shownRecords = showLowInformation
+            ? group.records
+            : group.records.filter((asset) => !isLowInformationAsset(asset));
+          return (
+            <a key={group.path} href={`#${assetGroupId(group.path)}`}>
+              {group.title}
+              <span>{shownRecords.length}/{group.records.length}</span>
+            </a>
+          );
+        })}
+      </nav>
+
+      {atlas.asset_groups.map((group) => {
+        const shownRecords = showLowInformation
+          ? group.records
+          : group.records.filter((asset) => !isLowInformationAsset(asset));
+        const hiddenRecords = group.records.length - shownRecords.length;
+        return (
+          <section key={group.path} id={assetGroupId(group.path)} className="atlas-section">
+            <h3>
+              {group.title}
+              <span>{shownRecords.length} shown / {group.records.length} total</span>
+            </h3>
+            <p>
+              {group.missing ? `Missing ${group.path} from the current scan root.` : group.description}
+              {!showLowInformation && hiddenRecords > 0 && ` ${hiddenRecords} mask/blank-like records hidden.`}
+            </p>
+            {shownRecords.length > 0 ? (
+              <div className="atlas-grid">
+                {shownRecords.map((asset) => (
+                  <MenuAssetCard
+                    key={`${asset.pkf_id}-${asset.table_index}-${asset.slot_index}`}
+                    asset={asset}
+                    onOpen={onOpenAsset}
+                  />
+                ))}
+              </div>
+            ) : (
+              <div className="empty-state">No visible candidates in this group with the current mask filter.</div>
+            )}
+          </section>
+        );
+      })}
+    </section>
+  );
+}
+
 export function App() {
   const [summary, setSummary] = useState<Summary | null>(null);
   const [pkfs, setPkfs] = useState<PkfListItem[]>([]);
+  const [menuAtlas, setMenuAtlas] = useState<MenuAtlas | null>(null);
+  const [view, setView] = useState<'pkfs' | 'menus'>('pkfs');
   const [selectedId, setSelectedId] = useState<number | null>(null);
   const [detail, setDetail] = useState<PkfDetail | null>(null);
+  const [detailId, setDetailId] = useState<number | null>(null);
   const [selectedRecord, setSelectedRecord] = useState<PkfRecord | null>(null);
+  const [pendingRecordTarget, setPendingRecordTarget] = useState<{
+    pkfId: number;
+    tableIndex: number;
+    slotIndex: number;
+  } | null>(null);
   const [query, setQuery] = useState('');
   const [kind, setKind] = useState('');
   const [dimension, setDimension] = useState('');
@@ -293,11 +478,12 @@ export function App() {
 
   useEffect(() => {
     let active = true;
-    Promise.all([fetchSummary(), fetchPkfs()])
-      .then(([nextSummary, nextPkfs]) => {
+    Promise.all([fetchSummary(), fetchPkfs(), fetchMenuAtlas()])
+      .then(([nextSummary, nextPkfs, nextMenuAtlas]) => {
         if (!active) return;
         setSummary(nextSummary);
         setPkfs(nextPkfs);
+        setMenuAtlas(nextMenuAtlas);
         setSelectedId(nextPkfs[0]?.id ?? null);
       })
       .catch((err: Error) => {
@@ -311,13 +497,19 @@ export function App() {
   useEffect(() => {
     if (selectedId === null) {
       setDetail(null);
+      setDetailId(null);
+      setSelectedRecord(null);
       return;
     }
     let active = true;
+    setDetail(null);
+    setDetailId(null);
+    setSelectedRecord(null);
     fetchPkf(selectedId)
       .then((nextDetail) => {
         if (!active) return;
         setDetail(nextDetail);
+        setDetailId(selectedId);
         setSelectedRecord(nextDetail.tables[0]?.records[0] ?? null);
       })
       .catch((err: Error) => {
@@ -331,32 +523,96 @@ export function App() {
   const kinds = useMemo(() => allKinds(pkfs), [pkfs]);
   const dimensions = useMemo(() => allDimensions(pkfs), [pkfs]);
   const p3dFamilies = useMemo(() => allP3DFamilies(pkfs), [pkfs]);
-  const filteredPkfs = useMemo(
-    () => pkfs.filter((item) => matchesPkfFilters(item, { query, kind, dimension, p3dFamily })),
-    [pkfs, query, kind, dimension, p3dFamily],
+  const activeFilters = useMemo(
+    () => ({ query, kind, dimension, p3dFamily }),
+    [query, kind, dimension, p3dFamily],
   );
+  const filteredPkfs = useMemo(
+    () => pkfs.filter((item) => matchesPkfFilters(item, activeFilters)),
+    [pkfs, activeFilters],
+  );
+  const activeDetail = detailId === selectedId ? detail : null;
+  const activeRecord = activeDetail ? selectedRecord : null;
   const selectedListItem = pkfs.find((item) => item.id === selectedId) ?? null;
+
+  useEffect(() => {
+    if (!activeDetail || pendingRecordTarget?.pkfId !== detailId) {
+      return;
+    }
+    const targetRecord = activeDetail.tables
+      .flatMap((table) => table.records)
+      .find(
+        (record) => record.table_index === pendingRecordTarget.tableIndex
+          && record.slot_index === pendingRecordTarget.slotIndex,
+      );
+    if (!targetRecord) {
+      return;
+    }
+    setSelectedRecord(targetRecord);
+    setPendingRecordTarget(null);
+  }, [activeDetail, detailId, pendingRecordTarget]);
+
+  useEffect(() => {
+    if (filteredPkfs.length === 0) {
+      if (selectedId !== null) {
+        setSelectedId(null);
+      }
+      return;
+    }
+    if (!filteredPkfs.some((item) => item.id === selectedId)) {
+      setSelectedId(filteredPkfs[0].id);
+    }
+  }, [filteredPkfs, selectedId]);
+
+  useEffect(() => {
+    if (!activeDetail) {
+      return;
+    }
+    if (activeRecord && matchesRecordFilters(activeRecord, activeFilters)) {
+      return;
+    }
+    setSelectedRecord(firstRecordMatchingFilters(activeDetail, activeFilters));
+  }, [activeDetail, activeRecord, activeFilters]);
 
   return (
     <main className="shell">
       <section className="hero">
         <div>
-          <p className="eyebrow">PM99 SIMULDAT</p>
-          <h1>PKF Viewer</h1>
+          <p className="eyebrow">PM99 Assets</p>
+          <h1>{view === 'menus' ? 'Menu Atlas' : 'PKF Viewer'}</h1>
           <p>
-            Browse table-indexed PM99 match assets, stream image previews from local PKFs,
-            and inspect the bytes without extracting files.
+            {view === 'menus'
+              ? 'Browse the actual menu backgrounds, button strips, resource sprites, layout strips, and icons from the PKFs, with exact table/slot targets for replacement work.'
+              : 'Browse table-indexed PM99 assets, stream image previews from local PKFs, and inspect the bytes without extracting files.'}
           </p>
+          <div className="view-tabs" aria-label="Viewer mode">
+            <button className={view === 'pkfs' ? 'active' : ''} onClick={() => setView('pkfs')}>PKF Records</button>
+            <button className={view === 'menus' ? 'active' : ''} onClick={() => setView('menus')}>Menu Atlas</button>
+          </div>
         </div>
         <div className="stat-card">
-          <span>{summary?.pkf_count ?? 0}</span>
-          <p>PKFs scanned from {summary?.root ?? 'loading...'}</p>
+          <span>{view === 'menus' ? menuAtlas?.asset_count ?? 0 : summary?.pkf_count ?? 0}</span>
+          <p>{view === 'menus' ? 'menu bitmap records surfaced' : `PKFs scanned from ${summary?.root ?? 'loading...'}`}</p>
         </div>
       </section>
 
       {error && <div className="error-banner">{error}</div>}
       {summary?.error && <div className="error-banner">{summary.error}</div>}
 
+      {view === 'menus' ? (
+        <MenuAtlasView
+          atlas={menuAtlas}
+          onOpenAsset={(asset) => {
+            setPendingRecordTarget({
+              pkfId: asset.pkf_id,
+              tableIndex: asset.table_index,
+              slotIndex: asset.slot_index,
+            });
+            setSelectedId(asset.pkf_id);
+            setView('pkfs');
+          }}
+        />
+      ) : (
       <section className="workspace">
         <aside className="sidebar">
           <div className="filters">
@@ -403,32 +659,32 @@ export function App() {
         </aside>
 
         <section className="record-area">
-          {detail ? (
+          {activeDetail ? (
             <>
               <header className="file-header">
                 <div>
                   <p className="eyebrow">Open PKF</p>
-                  <h2>{detail.relative_path}</h2>
+                  <h2>{activeDetail.relative_path}</h2>
                 </div>
                 <div className="file-meta">
-                  <span>{detail.selected_table_count} tables</span>
-                  <span>{detail.selected_entry_count} records</span>
-                  <span>{(detail.indexed_payload_coverage_ratio * 100).toFixed(2)}% indexed</span>
+                  <span>{activeDetail.selected_table_count} tables</span>
+                  <span>{activeDetail.selected_entry_count} records</span>
+                  <span>{(activeDetail.indexed_payload_coverage_ratio * 100).toFixed(2)}% indexed</span>
                 </div>
               </header>
 
               <div className="tables">
-                {detail.tables.map((table) => (
+                {activeDetail.tables.map((table) => (
                   <section key={table.table_index} className="table-section">
                     <h3>Table {table.table_index} <span>{table.entry_count} records</span></h3>
                     <div className="record-grid">
                       {table.records.map((record) => (
                         <button
                           key={`${record.table_index}-${record.slot_index}`}
-                          className={record === selectedRecord ? 'record-card active' : 'record-card'}
+                          className={record === activeRecord ? 'record-card active' : 'record-card'}
                           onClick={() => setSelectedRecord(record)}
                         >
-                          <RecordPreview pkfId={detail === null ? 0 : selectedId ?? 0} record={record} />
+                          <RecordPreview pkfId={detailId ?? 0} record={record} />
                           <span>{recordLabel(record)}</span>
                           <small>{record.payload_offset_hex} / {record.length_hex}</small>
                         </button>
@@ -443,8 +699,9 @@ export function App() {
           )}
         </section>
 
-        <DetailPanel selected={selectedListItem} record={selectedRecord} />
+        <DetailPanel selected={selectedListItem} record={activeRecord} />
       </section>
+      )}
     </main>
   );
 }

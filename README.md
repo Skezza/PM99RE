@@ -8,6 +8,7 @@ PM99RE is the research/integration repository for Premier Manager 99 reverse eng
 - `upstream/pm99-skezmod-patcher` is the source of truth for shipped patch tooling.
 - `upstream/pm99-runner` is the source of truth for runtime/remote runner automation.
 - `tools/` contains standalone research/viewer tools that are not product editor or patcher code, including the PKF viewer and browser runtime harness.
+- `experiments/` contains source-only prototypes that are not ready to be promoted to `tools/`.
 - PM99RE keeps research notes, probes, validation scripts, and local workspace data.
 
 PM99RE must not carry parallel editor implementation code.
@@ -19,6 +20,7 @@ PM99RE must not carry parallel editor implementation code.
 - Browser runtime assets such as ISO/ZIP/WASM/disk images must remain local-only inside ignored tool asset directories.
 - `.local/` remains the primary local game/workspace area.
 - `work/`, `worktrees/`, `artifacts/`, `tbc/`, and `FDI-PKF/` are local-only scratch/artifact areas.
+- `upstream/` is only for declared submodules. Put alternate checkouts and worker branches in ignored `worktrees/`.
 
 ## Daily Workflow
 

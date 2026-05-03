@@ -6,11 +6,13 @@ Product development wrappers:
 - `dev_editor.sh` runs commands in `upstream/pm99-skezmod-db-editor` by default; set `PM99_EDITOR_ROOT` for an alternate checkout
 - `dev_patcher.sh` runs commands in `upstream/pm99-skezmod-patcher` by default; set `PM99_PATCHER_ROOT` for an alternate checkout
 - `check_repo_boundary.py` enforces that PM99RE does not track product paths, local artifact roots, or PM99 binaries
-- `check_repo_boundary.py --check-local` also flags root `app/`, `tests/`, or misplaced `pm99-in-a-browser/` leftovers during local cleanup
+- `check_repo_boundary.py --check-local` also flags root `app/`, `tests/`, misplaced `pm99-in-a-browser/` leftovers, and undeclared checkouts under `upstream/` during local cleanup
 - `check_repo_state.py` verifies clean root/submodule state for reproducible handoff
 - `create_pm99_isolated_run.sh` materializes the canonical read-only pristine fixture from the source ZIP and clones a writable per-run PM99 game root under `work/pm99/`
 - `assert_pm99_isolated_input.py` validates fixture/game-root/DBDAT inputs and hard-fails legacy `.local/premier-manager-ninety-nine` usage
 - `build_player_bitmap_review.sh` builds the full local player-photo gallery via the upstream editor script and writes outputs into `work/`
+- `build_artifact_browser_html.py` builds a local static image browser grouped by artifact/proof run, labels runs with parsed run dates, and writes it into `work/artifact_browser/`; pass `--root work --root tbc` when you want the slower exhaustive local sweep
+- `serve_artifact_browser.py` serves `work/artifact_browser/` on localhost and enables browser delete controls; deletions are moved into `work/artifact_browser_trash/`
 - `audit_player_bitmap_coverage.sh` runs a reproducible player-photo coverage audit and writes a timestamped evidence bundle into `artifacts/research/`
 - `audit_player_bitmap_coverage.py` computes the deterministic audit summary (coverage, source-family scan, executable markers, optional payload image scan)
 - `build_team_kit_review.sh` builds deterministic team-kit review artifacts (DAT palette + mask0) into `work/`
@@ -36,6 +38,8 @@ Product development wrappers:
 - `probe_pm99_exe_forensics.py` emits a read-only PE/byte-map/import/string/diff survey for local `MANAGPRE.EXE` variants, useful for executable forensics without copying binaries into git
 - `probe_pm99_zlib_streams.py` scans PM99 data trees for normal zlib streams and the executable's `DMZ1` raw-deflate wrapper without dumping decompressed proprietary payloads
 - `probe_simuldat_pkf_layout.py` surveys SIMULDAT `.PKF` offset tables, continuation tables, payload kinds, image dimensions, and coverage without extracting proprietary payloads
+- `build_english80_2026_football_squads.py`, `build_english80_2026_division_structured_candidate.py`, `patch_english80_division_kits.py`, and the `build_english80_*_evidence.py` helpers preserve the modern English 80-club research pipeline and static proof pages
+- `research_variable_player_name_contracts.py`, `probe_*variable_name*.py`, `apply_*variable_names*.py`, and `validate_player_variable_name_full_matrix.py` preserve the variable-length player-name research probes; these are research artifacts, not generic editor write paths
 
 Research/probe scripts:
 - `probe_*`, `profile_*`, `reconcile_*`, and targeted patch/probe helpers remain here

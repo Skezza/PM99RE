@@ -37,6 +37,7 @@ FORBIDDEN_PATTERNS = (
 ALLOWED_EXACT = {"DBDAT/.gitkeep"}
 LOCAL_PRODUCT_DIRS = ("app", "tests")
 LOCAL_ROOT_TOOL_DIRS = ("pm99-in-a-browser",)
+UPSTREAM_ROOT = "upstream"
 
 
 def _tracked_files(repo_root: Path) -> list[str]:
@@ -46,6 +47,25 @@ def _tracked_files(repo_root: Path) -> list[str]:
         text=True,
     )
     return [line.strip() for line in out.splitlines() if line.strip()]
+
+
+def _submodule_paths(repo_root: Path) -> list[str]:
+    result = subprocess.run(
+        ["git", "config", "--file", ".gitmodules", "--get-regexp", r"\.path$"],
+        cwd=repo_root,
+        text=True,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE,
+        check=False,
+    )
+    if result.returncode != 0:
+        return []
+    paths: list[str] = []
+    for line in result.stdout.splitlines():
+        parts = line.split(maxsplit=1)
+        if len(parts) == 2:
+            paths.append(parts[1])
+    return paths
 
 
 def _is_forbidden_binary_or_backup(rel: str) -> bool:
@@ -80,6 +100,22 @@ def _local_dir_violations(repo_root: Path) -> list[str]:
     return found
 
 
+def _local_upstream_dir_violations(repo_root: Path) -> list[str]:
+    upstream = repo_root / UPSTREAM_ROOT
+    if not upstream.exists():
+        return []
+    allowed = {
+        Path(rel).name
+        for rel in _submodule_paths(repo_root)
+        if Path(rel).parent.as_posix() == UPSTREAM_ROOT
+    }
+    return sorted(
+        f"{UPSTREAM_ROOT}/{path.name}/"
+        for path in upstream.iterdir()
+        if path.is_dir() and path.name not in allowed
+    )
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument(
@@ -96,6 +132,9 @@ def main() -> int:
         local_found = _local_dir_violations(repo_root)
         if local_found:
             found["local_root_dirs"] = local_found
+        upstream_found = _local_upstream_dir_violations(repo_root)
+        if upstream_found:
+            found["local_upstream_dirs"] = upstream_found
 
     if not found:
         print("Boundary check OK: no product paths, local artifacts, or PM99 binaries tracked in PM99RE.")

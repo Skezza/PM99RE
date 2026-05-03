@@ -1,4 +1,4 @@
-import type { PaletteColor, PkfDetail, PkfListItem, Summary } from './types';
+import type { MenuAtlas, PaletteColor, PkfDetail, PkfListItem, Summary } from './types';
 
 async function getJson<T>(url: string): Promise<T> {
   const response = await fetch(url);
@@ -18,6 +18,10 @@ export function fetchPkfs(): Promise<PkfListItem[]> {
 
 export function fetchPkf(id: number): Promise<PkfDetail> {
   return getJson<PkfDetail>(`/api/pkfs/${id}`);
+}
+
+export function fetchMenuAtlas(): Promise<MenuAtlas> {
+  return getJson<MenuAtlas>('/api/menu-atlas');
 }
 
 export function previewUrl(pkfId: number, tableIndex: number, slotIndex: number): string {

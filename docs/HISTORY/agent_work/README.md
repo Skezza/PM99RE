@@ -10,6 +10,7 @@ instead of retained indefinitely.
 
 Latest restructure handover:
 - [2026-03-09_repo_restructure_handover.md](2026-03-09_repo_restructure_handover.md)
+- [2026-03-09_valderrama_patch_handover.md](2026-03-09_valderrama_patch_handover.md)
 - [2026-04-08_player_bitmap_archive_discovery.md](2026-04-08_player_bitmap_archive_discovery.md)
 - [2026-04-08_stadium_metadata_discovery.md](2026-04-08_stadium_metadata_discovery.md)
 - [2026-04-09_manchester_united_staff_two_run_validation.md](2026-04-09_manchester_united_staff_two_run_validation.md)

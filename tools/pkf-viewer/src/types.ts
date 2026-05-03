@@ -131,3 +131,53 @@ export interface PaletteColor {
   b: number;
   flags: number;
 }
+
+export interface MenuAtlas {
+  asset_groups: MenuAssetGroup[];
+  asset_count: number;
+  runtime_root: string;
+  runtime_screens: RuntimeMenuScreen[];
+}
+
+export interface MenuAssetGroup {
+  path: string;
+  title: string;
+  description: string;
+  missing: boolean;
+  records: MenuAsset[];
+}
+
+export interface MenuAsset {
+  pkf_id: number;
+  pkf_path: string;
+  table_index: number;
+  slot_index: number;
+  kind: string;
+  width: number | null;
+  height: number | null;
+  bpp: number | null;
+  length: number;
+  length_hex: string;
+  payload_offset_hex: string;
+  sha256_16: string;
+  role: string;
+  label: string;
+  mean_luminance: number | null;
+  near_black_ratio: number | null;
+  unique_color_count: number | null;
+  visual_quality: 'visible' | 'dark-control' | 'low-information' | 'unknown';
+  palette_source: string | null;
+}
+
+export interface RuntimeMenuScreen {
+  source: string;
+  run_tag: string;
+  label: string;
+  action: string | null;
+  value: string | null;
+  screen: string | null;
+  confidence: number | null;
+  reason: string | null;
+  image_hash: string | null;
+  screenshot_url: string;
+}
