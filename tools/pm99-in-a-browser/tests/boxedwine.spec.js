@@ -22,7 +22,7 @@ test("BoxedWine backend page builds the supplied runtime URL", async ({ page }) 
   expect(src).toContain("app=pm99-app.zip");
   expect(src).toContain("bpp=16");
   expect(src).toContain("resolution=640x480");
-  expect(src).toContain("p=%22C%3A%5Cfiles%5CMANAGPRE.EXE%22");
+  expect(src).toContain("p=%22C:\\files\\MANAGPRE.EXE%22");
   expect(errors).toEqual([]);
 });
 
@@ -63,7 +63,7 @@ test("BoxedWine query builder preserves paths, overlays, and environment flags",
 
   expect(query).toContain("root=../root.zip");
   expect(query).toContain("overlay=../patch%20one.zip;../patch%20two.zip");
-  expect(query).toContain("p=%22D%3A%5CPM99%5CMANAGPRE.EXE%22");
+  expect(query).toContain("p=%22D:\\PM99\\MANAGPRE.EXE%22");
   expect(query).toContain("auto=true");
   expect(query).toContain("env=%22WINEDLLOVERRIDES:ddraw%3Dn%2Cb%22");
   expect(query).toContain("em-env=%22PM99_TEST:1;PM99_TRACE:1%22");

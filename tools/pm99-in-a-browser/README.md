@@ -37,6 +37,10 @@ This copies the npm `v86` runtime, downloads v86 BIOS blobs from upstream, and
 downloads/extracts the latest BoxedWine Web release. It does not fetch Windows
 disk images or PM99 binaries.
 
+For the v86 route, prepare a local Windows 98 raw disk image with
+`scripts/prepare_win98_disk.sh` and inject PM99 with
+`scripts/inject_pm99_into_win98_disk.py`. See `docs/WIN98_DISK.md`.
+
 When the ignored payload files are present, the Playwright suite also runs live
 reachability checks against the staged PM99 zip/ISO, v86 runtime/BIOS, and
 BoxedWine Web build. In a clean checkout those live checks skip until the two

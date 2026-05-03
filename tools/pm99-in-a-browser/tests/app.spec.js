@@ -87,7 +87,7 @@ test("shared v86 path launches against a mocked runtime and can save state", asy
   const options = await page.evaluate(() => window.__v86Options[0]);
   expect(options.wasm_path).toBe("./vendor/v86/v86.wasm");
   expect(options.memory_size).toBe(128 * 1024 * 1024);
-  expect(options.hda.url).toBe("./v86/assets/disks/windows98-pm99.img");
+  expect(options.hda.url).toBe("./v86/assets/disks/win98-pm99.img");
   expect(options.cdrom.url).toBe("./assets/pm99.iso");
 
   const downloadPromise = page.waitForEvent("download");

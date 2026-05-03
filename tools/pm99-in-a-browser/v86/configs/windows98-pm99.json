@@ -16,7 +16,8 @@
     },
     "hda": {
       "url": "assets/disks/win98-pm99.img",
-      "async": false
+      "async": true,
+      "size": 2147483648
     },
     "cdrom": {
       "url": "assets/media/pm99.iso",

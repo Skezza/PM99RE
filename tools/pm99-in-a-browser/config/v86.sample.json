@@ -8,7 +8,7 @@
   "biosUrl": "./v86/assets/bios/seabios.bin",
   "vgaBiosUrl": "./v86/assets/bios/vgabios.bin",
   "hda": {
-    "url": "./v86/assets/disks/windows98-pm99.img",
+    "url": "./v86/assets/disks/win98-pm99.img",
     "async": true,
     "size": 2147483648
   },

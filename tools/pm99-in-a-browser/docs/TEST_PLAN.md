@@ -34,11 +34,13 @@ Record the first failure stage:
 
 ## v86 Gate
 
-1. Place v86 runtime files under `vendor/v86/`.
-2. Place BIOS files and a local Windows 98/2000 disk image under `assets/v86/`.
-3. Copy `config/v86.sample.json` to `config/v86.local.json`.
-4. Adjust disk image URL and size.
-5. Launch from the v86 tab.
+1. Run `npm run payloads:open` to stage the redistributable v86 runtime and BIOS
+   files.
+2. Prepare a local Windows 98 disk with `scripts/prepare_win98_disk.sh`; see
+   `docs/WIN98_DISK.md`.
+3. Inject PM99 into the installed FAT partition with
+   `scripts/inject_pm99_into_win98_disk.py`.
+4. Launch the `Windows 98 + PM99` profile from the v86 tab.
 
 Record:
 

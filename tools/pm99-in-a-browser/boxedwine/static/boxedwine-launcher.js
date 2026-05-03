@@ -84,7 +84,7 @@ export function buildBoxedWineQuery(config = {}) {
   addPathParam(params, "app", assets.appZip);
   addOverlayParam(params, assets.overlayZips);
 
-  addQuotedParam(params, "p", launch.program);
+  addQuotedParam(params, "p", launch.program, { keepPath: true });
   addBooleanParam(params, "auto", launch.auto);
   addBooleanParam(params, "desktop", launch.desktop);
   addBooleanParam(params, "sound", launch.sound);
@@ -124,11 +124,11 @@ function addBooleanParam(params, key, value) {
   params.push([key, value ? "true" : "false"]);
 }
 
-function addQuotedParam(params, key, value) {
+function addQuotedParam(params, key, value, options = {}) {
   if (isBlank(value)) {
     return;
   }
-  params.push([key, quoteBoxedWineValue(value)]);
+  params.push([key, quoteBoxedWineValue(value, options)]);
 }
 
 function addOverlayParam(params, overlayZips) {
@@ -164,7 +164,10 @@ function quoteBoxedWineValue(value, options = {}) {
 function encodeBoxedWineValue(value, options = {}) {
   let encoded = encodeURIComponent(String(value));
   if (options.keepPath) {
-    encoded = encoded.replace(/%2F/gi, "/").replace(/%3A/gi, ":");
+    encoded = encoded
+      .replace(/%2F/gi, "/")
+      .replace(/%3A/gi, ":")
+      .replace(/%5C/gi, "\\");
   }
   if (options.keepListSeparators) {
     encoded = encoded.replace(/%3A/gi, ":").replace(/%3B/gi, ";");

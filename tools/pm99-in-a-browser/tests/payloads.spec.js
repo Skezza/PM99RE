@@ -66,6 +66,6 @@ test.describe("live payload wiring", () => {
     expect(src).toContain("/boxedwine/vendor/boxedwine.html");
     expect(src).toContain("root=boxedwine-root.zip");
     expect(src).toContain("app=pm99-app.zip");
-    expect(src).toContain("p=%22C%3A%5Cfiles%5CMANAGPRE.EXE%22");
+    expect(src).toContain("p=%22C:\\files\\MANAGPRE.EXE%22");
   });
 });
