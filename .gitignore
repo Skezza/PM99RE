@@ -26,7 +26,9 @@ DBDAT/*
 work/
 worktrees/
 artifacts/
-docs/artifacts/
+!docs/artifacts/
+docs/artifacts/*
+!docs/artifacts/pm99_safe_read_edit_capability_matrix_20260605.json
 tbc/
 FDI-PKF/
 /pm99-in-a-browser/

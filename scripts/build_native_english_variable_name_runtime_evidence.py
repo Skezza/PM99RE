@@ -23,6 +23,7 @@ def _parse_args() -> argparse.Namespace:
     parser.add_argument("--probe-dir", default=str(DEFAULT_PROBE_DIR))
     parser.add_argument("--runner-artifact-root", default=str(DEFAULT_RUNNER_ROOT))
     parser.add_argument("--output-dir", default=str(DEFAULT_OUTPUT_DIR))
+    parser.add_argument("--prefer-fast-runs", action=argparse.BooleanOptionalAction, default=True)
     parser.add_argument("--force", action="store_true")
     return parser.parse_args()
 
@@ -83,6 +84,10 @@ def build(args: argparse.Namespace) -> dict[str, Any]:
         club_key = str(selected["club_key"])
         batch = batch_by_club.get(club_key, {})
         run_tag = str(batch.get("run_tag") or "")
+        if bool(args.prefer_fast_runs):
+            fast_run_tag = run_tag.replace("native_english30_b", "native_english30_fast_b")
+            if fast_run_tag != run_tag and (runner_root / fast_run_tag).is_dir():
+                run_tag = fast_run_tag
         batch_dir = runner_root / run_tag if run_tag else Path()
         safe_key = "".join(ch if ch.isalnum() or ch == "_" else "_" for ch in club_key)
         status_path = batch_dir / "club_status" / f"{safe_key}.status"

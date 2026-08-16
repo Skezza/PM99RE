@@ -23,6 +23,8 @@ DO_PREPARE=0
 DO_SYNC=0
 KEEP_REMOTE=0
 DOCKER_TIMEOUT_SECONDS="${PM99_RUNNER_DOCKER_TIMEOUT_SECONDS:-900}"
+USE_DEFAULT_STEPS=1
+declare -a CUSTOM_STEPS=()
 
 STATIC_SQUAD_STEPS=(
   "manager_league|click|460,263|4.0"
@@ -75,6 +77,8 @@ Options:
   --with-sync               Sync repo/editor to the remote namespace first
   --docker-timeout <sec>    Hard timeout for the container (default: 900)
   --keep-remote             Do not clean remote run/artifacts after success
+  --no-default-steps        Do not run the built-in Stoke squad navigation steps
+  --step <spec>             Append a native_runner step: LABEL|ACTION|VALUE|DELAY
   -h, --help                Show this help
 USAGE
 }
@@ -90,6 +94,8 @@ while [[ $# -gt 0 ]]; do
     --with-sync) DO_SYNC=1; shift ;;
     --docker-timeout) DOCKER_TIMEOUT_SECONDS="$2"; shift 2 ;;
     --keep-remote) KEEP_REMOTE=1; shift ;;
+    --no-default-steps) USE_DEFAULT_STEPS=0; shift ;;
+    --step) CUSTOM_STEPS+=("$2"); shift 2 ;;
     -h|--help) usage; exit 0 ;;
     *) echo "Unknown option: $1" >&2; usage >&2; exit 2 ;;
   esac
@@ -148,7 +154,12 @@ DRIVER_COMMAND=(
   --game-dir /workspace/game
   --artifacts-dir /workspace/artifacts
 )
-for step in "${STATIC_SQUAD_STEPS[@]}"; do
+if [[ ${USE_DEFAULT_STEPS} -eq 1 ]]; then
+  for step in "${STATIC_SQUAD_STEPS[@]}"; do
+    DRIVER_COMMAND+=(--step "${step}")
+  done
+fi
+for step in "${CUSTOM_STEPS[@]}"; do
   DRIVER_COMMAND+=(--step "${step}")
 done
 

@@ -135,8 +135,10 @@ Audit result: 80 clubs reviewed, 71 direct PM99 identities, 1 heritage successor
 - Kit patch manifest: `work/pm99/english80_2026_division_structured/english80_2026_division_structured_20260501T212554Z/kit_patch/english80_division_kit_patch_summary.json`
 - Kit contact sheet: `work/pm99/english80_2026_division_structured/english80_2026_division_structured_20260501T212554Z/kit_patch/english80_division_kit_contact_sheet.png`
 - Rich evidence page: `artifacts/english80_kit_corrected_20260501/index.html`
-- Broad selector sweep: `upstream/pm99-runner/docs/artifacts/pm99_runner/english80_kit_corrected_selector_20260501T212554Z/`
-- Focused visual proofs: `upstream/pm99-runner/docs/artifacts/pm99_runner/english80_kit_corrected_visual_proofs_20260501T212554Z/`
+- Dense selector sweep: `upstream/pm99-runner/docs/artifacts/pm99_runner/english80_kit_corrected_selector_dense_20260506/`
+- Original focused visual proofs: `upstream/pm99-runner/docs/artifacts/pm99_runner/english80_kit_corrected_visual_proofs_20260501T212554Z/`
+- Corrected lower-division focused visual proofs: `upstream/pm99-runner/docs/artifacts/pm99_runner/english80_kit_corrected_lower_coord_proofs_20260506/`
+- Corrected lower-division selector world: `artifacts/english80_kit_corrected_20260501/english80_corrected_selector_world_dense_20260506.json`
 
 Kit patch result: `ok=true`. The patcher reviewed all 80 researched identities and rewrote the kit archives for the visible carrier slots:
 
@@ -157,12 +159,12 @@ Validation after this build:
 - Parser validation: `all_valid=true`.
 - Game-ready v1 audit: `ok=true`, no issues.
 - Boundary check: OK.
-- Runner selector sweep: `success=true`, 4 divisions, 80 observations.
-- Focused visual run: 8/8 route captures returned status 0. The visually trusted proof set is Arsenal, Liverpool, Manchester United, and Stoke City; the lower-division new-club focused coordinates exposed coordinate drift and are not used as proof images in the HTML.
+- Dense runner selector sweep: `success=true`, 4 divisions, 296 observations.
+- Focused visual runs: 8/8 trusted route captures are represented in the HTML. Arsenal, Liverpool, Manchester United, and Stoke City are retained from the original focused proof assets; Wrexham, AFC Wimbledon, Bromley, and Crawley Town are refreshed from the corrected lower-division coordinate proof run.
 
 ## Residual Risks
 
 - Division/competition-byte writes remain deliberately out of scope until the competition surface is release-proven. The executable mapping is the selector/roster mapping.
 - Attributes are deterministic derived PM99 attributes, not imported one-for-one from a third-party ratings database.
 - FootballSquads mononyms require explicit aliases for best visible names; the current build patches 16 observed mononyms.
-- Lower-division focused selector coordinates need another correction pass before Wrexham, AFC Wimbledon, Bromley, and Crawley screenshots can be treated as visual proof. The current HTML marks this explicitly and uses Burton/Stevenage from the broad selector sweep as the demonstrated new-club screenshots.
+- Lower-division focused selector drift from the first proof run is superseded by the 2026-05-06 dense sweep and corrected four-club proof run.

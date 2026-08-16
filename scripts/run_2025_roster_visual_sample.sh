@@ -169,6 +169,7 @@ mkdir -p '${REMOTE_GAME_DIR}' '${REMOTE_HOME_DIR}' '${REMOTE_WINE_PREFIX_DIR}' '
   "${GAME_ROOT}/" \
   "$(pm99_runner_remote_spec):${REMOTE_GAME_DIR}/"
 
+rm -rf "${LOCAL_ARTIFACT_DIR}"
 mkdir -p "${LOCAL_ARTIFACT_DIR}"
 printf '%s\n' "${CLUB_KEYS[@]}" > "${LOCAL_ARTIFACT_DIR}/requested_clubs.txt"
 printf '%s\n' "${CAPTURE_ROUTES[@]}" > "${LOCAL_ARTIFACT_DIR}/requested_routes.txt"
@@ -322,6 +323,70 @@ import json
 import sys
 from pathlib import Path
 
+try:
+    from PIL import Image, ImageStat
+except Exception:  # pragma: no cover - optional runtime evidence hardening
+    Image = None  # type: ignore[assignment]
+    ImageStat = None  # type: ignore[assignment]
+
+
+def _ratio(pixels, predicate):
+    return sum(1 for pixel in pixels if predicate(pixel)) / max(1, len(pixels))
+
+
+def _looks_like_application_cannot_continue(path: Path) -> bool:
+    if Image is None or ImageStat is None or not path.is_file():
+        return False
+    try:
+        image = Image.open(path).convert("RGB")
+    except Exception:
+        return False
+    if image.width < 445 or image.height < 290:
+        return False
+    title = list(image.crop((202, 179, 438, 204)).getdata())
+    icon = list(image.crop((214, 210, 250, 246)).getdata())
+    panel = image.crop((203, 205, 437, 284))
+    text = list(image.crop((255, 215, 425, 235)).getdata())
+
+    title_dark = _ratio(title, lambda rgb: rgb[0] < 80 and rgb[1] < 80 and rgb[2] < 80)
+    warning_orange = _ratio(icon, lambda rgb: rgb[0] > 180 and 80 < rgb[1] < 180 and rgb[2] < 90)
+    panel_mean = sum(ImageStat.Stat(panel).mean) / 3
+    text_dark = _ratio(text, lambda rgb: rgb[0] < 80 and rgb[1] < 80 and rgb[2] < 80)
+    return title_dark > 0.45 and warning_orange > 0.03 and panel_mean > 150 and text_dark > 0.01
+
+
+def _looks_like_squad_management(path: Path) -> bool:
+    if Image is None or ImageStat is None or not path.is_file():
+        return False
+    try:
+        image = Image.open(path).convert("RGB")
+    except Exception:
+        return False
+    if image.width < 640 or image.height < 460:
+        return False
+    header = list(image.crop((150, 5, 450, 55)).getdata())
+    table = image.crop((5, 95, 535, 462))
+    table_pixels = list(table.getdata())
+    header_white = _ratio(header, lambda rgb: rgb[0] > 200 and rgb[1] > 200 and rgb[2] > 200)
+    table_light = _ratio(table_pixels, lambda rgb: rgb[0] > 150 and rgb[1] > 150 and rgb[2] > 150)
+    table_mean = sum(ImageStat.Stat(table).mean) / 3
+    return header_white > 0.04 and table_light > 0.45 and table_mean > 160
+
+
+def _pick_squad_screenshot(screenshots: list[str]) -> str:
+    preferences = [
+        "squad_inspect_scroll",
+        "squad_inspect_filters_enabled",
+        "squad_inspect_retry",
+        "squad_inspect",
+    ]
+    for token in preferences:
+        for shot in reversed(screenshots):
+            if token in shot:
+                return shot
+    return screenshots[-1] if screenshots else ""
+
+
 artifact_dir = Path(sys.argv[1]).resolve()
 run_status = int(sys.argv[2])
 sync_status = int(sys.argv[3])
@@ -336,13 +401,22 @@ for line in (artifact_dir / "visual_cases.tsv").read_text(encoding="utf-8").spli
     status_path = artifact_dir / "club_status" / f"{safe_key}.status"
     status = int(status_path.read_text(encoding="utf-8").strip()) if status_path.is_file() else 99
     screenshots = sorted(str(path.relative_to(artifact_dir)) for path in (artifact_dir / "clubs" / safe_key / "screens").glob("*.png"))
+    selected_screenshot = _pick_squad_screenshot(screenshots)
+    crash_dialog = _looks_like_application_cannot_continue(artifact_dir / selected_screenshot) if selected_screenshot else False
+    squad_screen = _looks_like_squad_management(artifact_dir / selected_screenshot) if selected_screenshot else False
+    visual_ok = status == 0 and bool(selected_screenshot) and not crash_dialog and squad_screen
     cases.append(
         {
             "club_key": club_key,
             "set_name": set_name,
             "team_query": team_query,
             "status": status,
-            "ok": status == 0,
+            "ok": visual_ok,
+            "process_ok": status == 0,
+            "visual_ok": visual_ok,
+            "application_cannot_continue": crash_dialog,
+            "squad_management_screen": squad_screen,
+            "selected_screenshot": selected_screenshot,
             "summary_path": str(summary_path),
             "screenshots": screenshots,
         }

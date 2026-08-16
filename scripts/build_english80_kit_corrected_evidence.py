@@ -15,8 +15,11 @@ from typing import Any
 ROOT = Path(__file__).resolve().parents[1]
 DEFAULT_BUILD_DIR = ROOT / "work/pm99/english80_2026_division_structured/english80_2026_division_structured_20260501T212554Z"
 DEFAULT_OUTPUT_DIR = ROOT / "artifacts/english80_kit_corrected_20260501"
-DEFAULT_RUNNER_DIR = ROOT / "upstream/pm99-runner/docs/artifacts/pm99_runner/english80_kit_corrected_selector_20260501T212554Z"
-DEFAULT_VISUAL_DIR = ROOT / "upstream/pm99-runner/docs/artifacts/pm99_runner/english80_kit_corrected_visual_proofs_20260501T212554Z"
+DEFAULT_RUNNER_DIR = ROOT / "upstream/pm99-runner/docs/artifacts/pm99_runner/english80_kit_corrected_selector_dense_20260506"
+DEFAULT_VISUAL_DIRS = [
+    ROOT / "upstream/pm99-runner/docs/artifacts/pm99_runner/english80_kit_corrected_visual_proofs_20260501T212554Z",
+    ROOT / "upstream/pm99-runner/docs/artifacts/pm99_runner/english80_kit_corrected_lower_coord_proofs_20260506",
+]
 
 
 HIGHLIGHT_KEYS = {
@@ -31,6 +34,17 @@ HIGHLIGHT_KEYS = {
 }
 
 VISUAL_TRUSTED_KEYS = {
+    "arsenal",
+    "liverpool",
+    "manchester_united",
+    "stoke_city",
+    "wrexham",
+    "afc_wimbledon",
+    "bromley",
+    "crawley_town",
+}
+
+EXISTING_ASSET_FALLBACK_KEYS = {
     "arsenal",
     "liverpool",
     "manchester_united",
@@ -166,6 +180,7 @@ def load_runner_screens(runner_dir: Path, output_dir: Path) -> tuple[list[dict[s
 def preferred_squad_screen(screens_dir: Path) -> Path | None:
     for name in [
         "025_squad_inspect_final.png",
+        "024_squad_inspect_retry.png",
         "023_squad_inspect_retry.png",
         "021_squad_inspect.png",
     ]:
@@ -221,6 +236,78 @@ def load_visual_proofs(visual_dir: Path, output_dir: Path) -> tuple[list[dict[st
     }
 
 
+def load_existing_visual_proofs(output_dir: Path, previous_manifest: dict[str, Any] | None) -> list[dict[str, Any]]:
+    previous_cases = []
+    if previous_manifest:
+        previous_cases = previous_manifest.get("visual", {}).get("summary", {}).get("cases", [])
+        if not previous_cases:
+            previous_cases = previous_manifest.get("visual", {}).get("cases", [])
+    by_key = {
+        str(previous.get("club_key") or "").strip(): previous
+        for previous in previous_cases
+        if isinstance(previous, dict) and previous.get("ok") and str(previous.get("club_key") or "").strip()
+    }
+    for club_key in EXISTING_ASSET_FALLBACK_KEYS:
+        by_key.setdefault(club_key, {"club_key": club_key, "ok": True, "status": 0})
+
+    cases: list[dict[str, Any]] = []
+    for club_key, previous in sorted(by_key.items()):
+        screens_dir = output_dir / "assets/visual" / club_key
+        pick_src = screens_dir / "008_pick_team.png"
+        squad_src = preferred_squad_screen(screens_dir)
+        if not pick_src.exists() and not squad_src:
+            continue
+        cases.append(
+            {
+                "club_key": club_key,
+                "ok": True,
+                "status": str(previous.get("status", 0)),
+                "pick_team": rel(pick_src, output_dir) if pick_src.exists() else "",
+                "squad": rel(squad_src, output_dir) if squad_src else "",
+                "summary_path": str(previous.get("summary_path") or ""),
+                "source": "existing_output_assets",
+            }
+        )
+    return cases
+
+
+def merge_visual_cases(*case_groups: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    by_key: dict[str, dict[str, Any]] = {}
+    order: list[str] = []
+    for cases in case_groups:
+        for case in cases:
+            key = case["club_key"]
+            if key not in by_key:
+                order.append(key)
+            by_key[key] = case
+    return [by_key[key] for key in order]
+
+
+def load_visual_proof_sources(
+    visual_dirs: list[Path],
+    output_dir: Path,
+    previous_manifest: dict[str, Any] | None,
+) -> tuple[list[dict[str, Any]], dict[str, Any]]:
+    existing_cases = load_existing_visual_proofs(output_dir, previous_manifest)
+    fresh_cases: list[dict[str, Any]] = []
+    source_meta: list[dict[str, Any]] = []
+    for visual_dir in visual_dirs:
+        cases, meta = load_visual_proofs(visual_dir, output_dir)
+        source_meta.append(meta)
+        fresh_cases.extend(cases)
+
+    merged = merge_visual_cases(existing_cases, fresh_cases)
+    return merged, {
+        "available": bool(merged),
+        "visual_dirs": [path.as_posix() for path in visual_dirs],
+        "sources": source_meta,
+        "case_count": len(merged),
+        "ok_count": sum(1 for case in merged if case["ok"]),
+        "existing_asset_cases": len(existing_cases),
+        "cases": merged,
+    }
+
+
 def event_summary(events: list[dict[str, Any]]) -> dict[str, dict[str, Any]]:
     by_key: dict[str, dict[str, Any]] = {}
     for event in events:
@@ -243,23 +330,23 @@ def event_summary(events: list[dict[str, Any]]) -> dict[str, dict[str, Any]]:
 
 def find_runner_highlights(observations: list[dict[str, Any]]) -> list[dict[str, Any]]:
     wanted_tokens = [
-        ("Arsenal", "arsenal"),
-        ("Liverpool", "liverpool"),
-        ("Manchester United", "manchester"),
-        ("Stoke City", "stoke"),
-        ("Burton Albion", "burton"),
-        ("Stevenage", "stevenage"),
-        ("Bromley", "bromley"),
-        ("Wrexham", "wrexham"),
-        ("AFC Wimbledon", "wimbledon"),
-        ("Crawley Town", "crawley"),
+        ("Arsenal", ("arsenal",)),
+        ("Liverpool", ("liverpool",)),
+        ("Manchester United", ("manchester", "man utd")),
+        ("Stoke City", ("stoke",)),
+        ("Burton Albion", ("burton",)),
+        ("Stevenage", ("stevenage",)),
+        ("Bromley", ("bromley", "bromiey")),
+        ("Wrexham", ("wrexham",)),
+        ("AFC Wimbledon", ("afc w", "wimbledon")),
+        ("Crawley Town", ("crawley",)),
     ]
     highlights: list[dict[str, Any]] = []
     used: set[str] = set()
-    for label, token in wanted_tokens:
+    for label, tokens in wanted_tokens:
         for obs in observations:
             haystack = " ".join([obs.get("ocr_normalized", ""), obs.get("text", "")]).lower()
-            if token in haystack and obs["screenshot"] not in used:
+            if any(token in haystack for token in tokens) and obs["screenshot"] not in used:
                 copy = dict(obs)
                 copy["label"] = label
                 highlights.append(copy)
@@ -639,7 +726,7 @@ def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--build-dir", type=Path, default=DEFAULT_BUILD_DIR)
     parser.add_argument("--runner-dir", type=Path, default=DEFAULT_RUNNER_DIR)
-    parser.add_argument("--visual-dir", type=Path, default=DEFAULT_VISUAL_DIR)
+    parser.add_argument("--visual-dir", type=Path, action="append", dest="visual_dirs")
     parser.add_argument("--output-dir", type=Path, default=DEFAULT_OUTPUT_DIR)
     return parser.parse_args()
 
@@ -648,17 +735,19 @@ def main() -> int:
     args = parse_args()
     build_dir = args.build_dir.resolve()
     runner_dir = args.runner_dir.resolve()
-    visual_dir = args.visual_dir.resolve()
+    visual_dirs = [path.resolve() for path in (args.visual_dirs or DEFAULT_VISUAL_DIRS)]
     output_dir = args.output_dir.resolve()
     manifest_path = build_dir / "kit_patch/english80_division_kit_patch_summary.json"
     if not manifest_path.exists():
         raise SystemExit(f"missing kit patch manifest: {manifest_path}")
 
     output_dir.mkdir(parents=True, exist_ok=True)
+    previous_manifest_path = output_dir / "evidence_manifest.json"
+    previous_manifest = read_json(previous_manifest_path) if previous_manifest_path.exists() else None
     manifest = read_json(manifest_path)
     kit_assets = copy_kit_assets(build_dir, output_dir, manifest["plan"])
     observations, runner_meta = load_runner_screens(runner_dir, output_dir)
-    visual_cases, visual_meta = load_visual_proofs(visual_dir, output_dir)
+    visual_cases, visual_meta = load_visual_proof_sources(visual_dirs, output_dir, previous_manifest)
     events_by_key = event_summary(manifest["events"])
     html_text = build_html(manifest, kit_assets, events_by_key, observations, runner_meta, visual_cases, visual_meta)
     (output_dir / "index.html").write_text(html_text, encoding="utf-8")
@@ -667,6 +756,7 @@ def main() -> int:
         {
             "build_dir": build_dir.as_posix(),
             "runner_dir": runner_dir.as_posix(),
+            "visual_dirs": [path.as_posix() for path in visual_dirs],
             "kit_patch_manifest": manifest_path.as_posix(),
             "html": (output_dir / "index.html").as_posix(),
             "runner": runner_meta,

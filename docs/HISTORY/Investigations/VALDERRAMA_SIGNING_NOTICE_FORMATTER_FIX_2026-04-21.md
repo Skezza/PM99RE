@@ -160,3 +160,34 @@ Selection note:
 Soñora note:
 
 - Diego Soñora submitted and advanced successfully, then stopped on the expected "initial line-up is not correct" dashboard warning loop after the squad changed. The wrapper still returned `run_status=0`, and the run includes the profile and post-submit proof screenshots.
+
+## DB Repair Closeout Proof - 2026-05-03
+
+The database-repair build was re-run through the PM99 runner using:
+
+- run tag: `dbrepair_valderrama_affordable_proof_20260503T165249Z`
+- local artifact root: `.local/runlogs/stars_player_offer_probe/dbrepair_valderrama_affordable_proof_20260503T165249Z/`
+- source game tree: `work/stability_experiments_20260501T072011Z/db_repair`
+
+Result:
+
+- wrapper returned `run_status=1` because the generic success detector did not see the ticker target before the scripted path fell into match flow
+- `crash_detected=false`
+- `wine_debugger_detected=false`
+- the run still produced useful visual proof for DB hydration
+
+Accepted evidence from the run:
+
+- `screens/49_inspect_valderrama_profile.png` shows Carlos Valderrama's player record with `Stars`.
+- `screens/54_inspect_post_submit.png` shows the normal Offers team list headed `Stars`, including Valderrama, Lalas, Soñora, Etcheverry, etc.
+- `screens/46_inspect_valderrama_search_results.png` confirms the raw search result row still uses compact numeric/value columns rather than a club-name column.
+
+Closeout proof page:
+
+- `docs/artifacts/pm99_runner/stars_db_repair_closeout_20260503/index.html`
+
+Important interpretation:
+
+- The visible club surface for search-by-name is the hover/status strip above `Cancel`, not the compact row cell. The accepted hover proof remains `artifacts/valderrama_offer_probe/valderrama_hover_fix_20260422T201330Z/screens/46_hover_result_row.png`.
+- The signing ticker proof remains `artifacts/valderrama_offer_probe/valderrama_zero_team_cont1_auto1_lowdisk_20260425T204247Z/screens/130_leftrail_02_inspect_07.png`.
+- The all-10 scale proof remains `artifacts/stars_sign_all_to_manutd/index.html`.
